@@ -1,0 +1,7 @@
+Version 0.1
+January 9, 2012
+	Added startSession() call for compatibility with Xataface 2.0 when sessions are only started when necessary.  This was to improve performance.. the change in this module was just for compatibility.
+
+March 7, 2007
+
+	Initial Release

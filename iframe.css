@@ -1,0 +1,20 @@
+#top-section,
+#left_column,
+.fineprint,
+#top-search-form,
+#main_column > .horizontalDivider {
+	display:none;
+}
+
+#main_table {
+	margin:0;
+	padding:0;
+}
+
+body.hide-button-bars .xf-button-bar {
+	display:none !important;
+}
+
+body.no-main-border div.mainArea {
+	border: none;
+}

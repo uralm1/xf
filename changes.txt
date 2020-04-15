@@ -1,0 +1,1260 @@
+Xataface 2.1.2 4802
+November 10, 2014
+    - Fixed issue with installer getting stuck after selecting database.
+    - added support for records_subtabs.size parameter 
+    - Added support for filtering related lists on columns (but only via URL conventions)
+    
+
+Xataface 2.1.1 4801
+October 26, 2014
+    - Fixed fatal error with installer.
+    - Fixed issue with Authentication tool not loaded when auth not used but memcache enabled.
+
+Xataface 2.1.0 4800
+October 13, 2014
+    - Added support for user-configuration overrides, including Show/Hide columns in 
+      list view.
+    - Improved options for RecordDialog - including width, height, and title support.
+    - G2 Theme now included and is default UI.
+    - Added DynamicTable class to improve performance of grafted fields.
+    - Added support for mysqli.
+    - added beforeLoadResultSet() hook in application delegate.
+    - added support for NOT LIKE queries.
+    - Added support for displaying field groups inline.
+    - Added support for overriding field definitions in relationships.
+        https://github.com/shannah/xataface/commit/6aed1c4813f977d7bc0db10cda827193896ad0ed
+    - Added getParentURL() method to related records.
+        https://github.com/shannah/xataface/commit/0345243910329ac79954f643c2749305fa9f8d5c
+    - Added view_related_record action to show a related record without having to navigate
+        to actual record.
+        https://github.com/shannah/xataface/commit/08502f57c30b57b30bfdcb78efabfcd12a228246
+    - Added CSS file that can be injected into pages that are shown inside iframes.
+        https://github.com/shannah/xataface/commit/8d2dda76838d6091df78d25ecdae769a4a62f509
+    - Added --include-title and --include-id query parameters for export_json action
+        https://github.com/shannah/xataface/commit/8cd717c68428b96c0ad1cb6ff9521ac49f387755
+    - Added support for modules to override HTML attributes
+        https://github.com/shannah/xataface/commit/838bd47d2aa740e36f4fc58d4180b1eed90bd697
+        
+    Many other improvements.  See all changes at https://github.com/shannah/xataface/commits/master
+        
+    
+Xataface 2.0.3 4798
+September 11, 2013
+    - Fixed fatal error in installer.
+    - Added support for Excel-friendly CSV exports.
+        http://xataface-tips.blogspot.ca/2013/09/excel-friendly-csv-files.html
+
+Xataface 2.0.2 4797
+September 9, 2013
+    - Added support for --stats parameter in export_json to return the stats of 
+      the query in the JSON output.
+    - Added support for headless operation of the new and edit actions.  Also 
+      added support for the -fields parameter in both the edit and new actions 
+      so that forms can be displayed with only a subset of the fields in the 
+      form.
+    - Added netbeans project
+    - Added support for generateTemporaryPassword() method in the application 
+      delegate class to override how temporary passwords are generated in the 
+      forgot_password action.
+    - Added example in docs for generateTemporaryPassword()
+    - Added ability to override sessionCookieKey property.
+    - Added tables beginning with xataface__ to disallowed tables by default.  
+      This can be overridden with allowed_tables rules.
+    - Updated the fineprint to auto-calculate the current year for the copyright
+      statement.
+    - Stripped forgot_password action from redirect after login to prevent a 
+      login loop after resetting password.
+    - Set caches to be cleared automatically after performing a version update.
+    - Added Dataface_QueryBuilder::where() method that can be used directly to 
+      just obtain the where clause for a query.
+    - Fixed != url conventions to handle null values properly.
+    - Internationalized strings in the forgot password form
+    - Fixed a few things in treetable.  Removing records still doesn't work.  
+      May just deprecate it as we can do much better now with the latest 
+      javascript libraries.
+    - Added a more descriptive error message when a field cannot be found.
+    - Added df_write_json function to public api.
+    - Added multi-select support to the ListView Javascript class.
+    - Added IO.remove() Javascript function for removing records.
+    - Added charset header to emails in forgot password action so that unicode 
+      will work properly.
+    - Fixed issue with select list 'add more...' option when values in the 
+      valuelist are not fields, but the result of expressions like concat.  
+      This change requires the latest public-api.php for the df_write_json 
+      function.
+    - Added filter in csv2ini script to convert &uuml;, &auml; &ouml; to their 
+      actual unicode characters.  This is because some of the translations in 
+      the de.ini file included the html entities which caused problems for 
+      action labels which, in 2.0, are html escaped.
+    - Changed all instances of htmlspecialchars to df_escape to fix encoding 
+      issues.
+    - Fixed untranslated string. http://bugs.weblite.ca/view.php?id=1295
+    - Internationalized df_offset() function.  Added strings to the xataface 
+      translations spreadsheet:
+        x weeks ago : %d weeks ago
+        x days ago : %d days ago
+        Today : Today
+        Yesterday : Yesterday
+        a week ago : a week ago
+    - Internationalized the limit field of the result controller.  Added string 
+        to xataface translations spreadsheet.
+    - Translated strings in delete_selected action.  Added to translations 
+      spreadsheet.  http://bugs.weblite.ca/view.php?id=1299
+    - Set the XF_OUTPUT_ENCODING constant when initializing the app so that it 
+      can be used inside df_escape.  Should improve performance by eliminating 
+      method calls inside frequently used df_escape method.
+    - Changed record mtime table creation to create or replace.
+    - Fixed PHP notice passing return value by reference. (r4753)
+    - Fixed issue with corrupt translate tag. (r4755)
+    - Made submit button translatable in forgot password form.
+    - Removed 'delayed' keyword for inserts since they don't work for INNODB.
+    - Fixed Outputcache management functions no longer appear if output cache is 
+      not enabled. http://bugs.weblite.ca/view.php?id=1318
+    - Internationalized strings in manage_output_cache template.
+    - Internationalized strings in the edit record template.
+      http://bugs.weblite.ca/view.php?id=1321
+    - Added support for ->_conf['nocache'] setting to allow any part of the app
+       to cause the request to opt out of caching.   This is necessary for the 
+        output cache to work with modules like the switch_user module.
+        http://bugs.weblite.ca/view.php?id=1322
+    - Internationalized 'copied' and 'replaced' http://bugs.weblite.ca/view.php?id=1322
+    - Internationalized strings in change_password template. http://bugs.weblite.ca/view.php?id=1326
+    - Internationalized some strings in copy_replace and added to translation spreadsheet.
+        http://bugs.weblite.ca/view.php?id=1327
+    - Added support for yui_autocomplete:maxResultsDisplayed directive in 
+      fields.ini file to specify the maximum number of results that can be 
+      displayed at a time in the yui_autocomplete widget.
+    - Changed default encoding to UTF-8 from ISO-8859-1.  This change may disrupt 
+      some existing applications that have data with special latin-1 characters.  
+      It was necessary though as more and more of Xataface is using JSON 
+      encoding and decoding and the PHP json_encode/decode functions only work 
+      with UTF-8.  If you pass them Latin encoded data it will return null - 
+      which is unacceptable.
+      You can still override this setting with 
+        default_oe=ISO-8859-1
+        default_ie=ISO-8859-1
+      in the conf.ini file.
+    - Fixed issue with xataface.view.View substitution in case the value is 
+      undefined.  It used to leave the placeholder text alone, but now it makes 
+      it blank.
+    - Changed Xataface_Thumbnail method to be static. (r4796)
+    - Changed the rendering of blob and container fields in list view and 
+      related list to show the image (if image) or download link if document 
+      rather than just printing the URL.
+    - Added support for fieldname__csvValue() method to format field output for 
+      use in CSV exports. Also added docs to the DelegateClass interface stub 
+      for this method.
+    - Fixed issue with export_csv only loading previews of records. It should 
+      load full records. This had been broken a while back when it was changed 
+      to use the Dataface_RecordReader() for loading the records.
+      Also fixed order of columns in CSV to respect order assigned in fields.ini 
+      file.
+    - Fixed language selector menu. Was showing up blank. Now correctly shows 
+      language labels etc..
+    - Fixed problem with actions that have atts specified explicitly. There were
+      being incorrectly placed inside the class attribute.
+    - Fixed support for tables.[tablename].label and tables.[tablename].singular_label 
+      i18n keys for setting the singular and plural labels for tables.
+    - Added X-UA-Compatible metatag to the main template to force IE into IE8 
+      compatibility. Previously would default to IE7 in many newer versions of 
+      IE for some reason.
+    - Fixed issue calendar not showing events when initially navigating to the 
+      calendar.
+    - Fixed debug notice in export_csv
+    - Fixed issue with View.js that caused sub-html content to be removed when 
+      the data-kvc tag is present but doesn't specify a value.
+    - Fixed issue with TableView that caused all subtables to have the subview 
+      class added to it..so that tags inside subtables wouldn't get live.
+    - Fixed issue with grid widget showing add existing button even if 
+      relationship doesn't have add existing related record granted. 
+      http://bugs.weblite.ca/view.php?id=1387
+    - Fixed incorrect instructions on how to add import_filter help text.
+    - Added updateRows() method to the ListView class so which just updates the 
+      existing rows... it doesn't check for removals and additions. This allows 
+      the update to occur without tearing down the rows and building them up 
+      again so it is much more efficient if you know you don't have to worry 
+      about row additions or removals.
+    - Fixed issue with grid widget where add existing record did not work in the 
+      default theme. http://bugs.weblite.ca/view.php?id=1203
+    - Fixed checkbox widget when used on n:m relationship. Previously it gave a 
+      javascript error when used from the default theme. It also failed to check
+      options that were added with the 'Other' button on the first time through.
+
+
+
+Xataface 2.0.1 4632
+May 29, 2013
+    - Fixed possible file system disclosure security hole with the -template parameter.
+      All installs of Xataface 2.0.x should be updated to this version.
+    - Added some compatibility with strptime for windows.
+    - Fixed getSiteTitle() to only show site title and not page.  getPageTitle() is good 
+        for the page title.  Also fixed from and reply-to addresses in forgot_password 
+        action so that they will support admin_email settings in the conf.ini that 
+        include both a name and address.
+    - Fixed history record actions so that they will use the custom icon instead of all 
+        using the same icon.
+
+Xataface 2.0.0 4582
+May 13, 2013
+
+    - Fixed bug in creation of modification times table - empty query.
+    - Added class to related result stats to make it easier for javascript to determine 
+        if a result controller is for a related set of the whole result set.
+    - Improved lookup widget so that it only queries the server for the latest change to 
+        the filter.  It used to make an ajax request after each letter, but in slower 
+        servers this would cause all kinds of problems.  Now it waits 500ms before 
+        sending the ajax request to ensure that the user is finished typing.
+    - Fixed issue with saving forms with tabs described at 
+        http://xataface.com/forum/?place=msg%2Fxataface%2F783PPFvWTp8%2FIPhoNTO2GWcJ
+    - Fixed warning PHP Strict Standards:  Only variables should be assigned by reference 
+        in Dataface/Relationship.php on line 1312
+    - Forced lookup widget icon images to be displayed inline.
+    - Added actionPerformed action to the ListView that is fired when a user clicks on a 
+        row of the list view.  It passes both the view and model as part of the event data.
+    - Fixed fatal error when copy selected related records.
+    - Fixed pass by reference warning in Dataface/RelatedRecord.php class.
+    - Fixed Javascript ListView so that it retains selections on update now.
+    - Fixed bug with data-kvc dot notation in the xataface.model.Model javascript class.
+    - Added parameter to the Dataface_IO::write() method to force inserting a new record. 
+         This is to fix an issue with the new record form overwriting an existing record 
+         if the keys match.
+    - Added override to fix bug related to related lists whereby fields that have the 
+        same name as a field in the source table are hidden by default.  This is still 
+        the default, but now it can be overridden by adding visibility:colname=visible 
+        to the relationships.ini file definition.
+    - Updated doc directory to be more self contained.
+    - Fixed longstanding bug with the activate action if the user was registering from a 
+        URL that didn't have a ? in it, it would redirect to an invalid page because it 
+        would form the url with a & instead of ?.
+    - Changed list view to show only 50 characters by default in the cell of a list view.  
+    Added support for list:maxcols directive in the fields.ini file to override this
+     number on a field to field basis.  Added data-fulltext attribute to the span tag to 
+     store the full text (well only the first 255 characters) so that javascript can be 
+     used to show the full text on request.  In a separate commit, the g2 theme has been
+      modified to take advantage of this - adding a 'show more' button on fields that 
+      have been truncated.
+    - Fixed export_json action so that field-level permissions are properly handled now.
+    - Added documentation for the css__tableHeaderCellClass() and css__tableRowClass() 
+        delegate class methods.
+    - Added support for css__tableHeaderCellClass() delegate class method to provide 
+        custom css class for a table header cell.
+    - Fixed internationalization of copy_replace action.  Numbers were incorrectly 
+        included with sprintf().
+    - Fixed attempt to use dataface__record_mtimes without first creating the 
+        record_mtimes table.
+    - Internationalized strings in copy_replace action.  Updated translations to 
+        latest from translations spreadsheet.  This includes new languages ca and nl.
+    - Fixed security issue that caused columns in json_export to be included even if 
+        they have been disabled by field security
+    - Fixed bug in multilingual databases with many-to-many relationships.
+    - Added a commit action for comitting changes to multiple records.
+    - Added initial support for record versioning.  You need to specify the field that is 
+        to store the record versions in the fields.ini file via the version=1 directive.  
+        Then if you try to save a record but the database version isn't the same, it 
+        will fail with a version error.
+    - Added the whoami action that allows webservices to ping the app to see if they are 
+        logged in.  Also added support for the --no-prompt parameter that prevents 
+        redirection to the login form.  Instead it will just issue a 401 HTTP response 
+        code to indicate that the user should log in.
+    - Added support for failedLogin trigger.
+    - Fixed PHP warning filemtime() stat failed in JavascriptTool
+    - Fixed typo from  change in Relationship introduced from previous update.
+    - Added support for ListModel.getQuery()
+    - Changed relationships to truncate text fields in the query.  Added relationships.ini
+         file directive: field:fieldname:max_length=1024  to set max length of field in the 
+         query.  It also respects the struct directive of the target table.
+    - Fixed warnings in php 5.4
+    - Handle empty cookie path
+    - Updated Document.js to work with the export_json action.
+    - Added support for --single parameter in export_json to return data as a single 
+        object instead of as an array of records.
+    - Added better compatibility with the export_json action in ResultSet js class.
+     - Added support for --var parameter in the export_json action that essentially 
+        causes the response to be wrapped in an object and the key specified by query[--var] 
+        contains the rows of the response.
+    - Set time limit to 0 in export csv
+    - Removed ob_gzhandler due to PHP bug 55544
+    - Fixed to handle empty date fields properly
+    - Small fix to calendar.php so that it will work on forms where the field name differs
+     from the table's field name.
+    - Added improved support for the widget:ifFormat directive on the calendar widget.  
+        Now it explicitly parses the value when putting value into the calendar widget and 
+        converts it back with pushing value to the model.
+        http://xataface.com/forum/viewtopic.php?f=4&t=5345
+    - Fixed php warning PHP Notice:  Array to string conversion in 
+        lib/jscalendar/calendar.php on line 103
+    - Fixed parse error with date widget. PHP Parse error:  syntax error, unexpected 
+        '(', expecting ')' in lib/HTML/QuickForm/date.php on line 77
+        http://bugs.weblite.ca/view.php?id=1169
+
+Xataface 1.3rc4 2458
+July 20, 2011
+
+	- Turned off indexing on tables that don't have the index enabled.
+	- Added support for timediff MySQL function.  Added tests also.
+	- Changed so that session timeout refers to logout after inactivity rather 
+	  than logout after time after session created.
+	- Changed session_timeout to an integer just in case this was causing problems before.
+	- Removed some bits that draw strict warnings in PHP 5.3
+	- Fixed bug that was caused by allowing actions to override the relationships.ini file 
+	  action definitions.  The problem was that all related actions were being overridden by 
+	  relationships.ini action definitions.  The fix was to add a directive for the 
+	  actions.ini file to explicitly set an action as overridable by the relationships.ini file.
+	- The related_records_list action has been given the directive:
+		allow_override=relationships.ini
+	  which says that any settings placed in the relationships.ini action: definition 
+	  will override details of this action.
+	- Added support for disable_session_ip_check in conf.ini file.
+	- Fixed updating but with multiple dataface__version records being added
+	- Changed errors when inserting new related record of type foreign key constraint 
+	  failures to be a notice instead of a fatal error so it will give the user a 
+	  friendlier error message.
+	- Changed session to just log the user out if their session has the wrong session id.
+	- Removed 'here' debugging text that shouldn't have been there in main template.
+	- Fixed error with overriding PEAR::raiseError (a static method) with a non-static 
+	  method.  Now XML_Parser::raiseError is static.
+	- Improved relationship labeling on find form
+	- Added support for visibility:find in relationships to hide a relationship from 
+	  the find form.
+	
+
+
+
+
+Xataface 1.3rc3 2167
+April 13, 2011
+
+	- Changed search results to show portions of page that match query
+	- Increased time limit on manage_build_index to unlimited - and closed session at 
+	  beginning of action to prevent user from being locked out.
+	- Fixed up the pluggable architecture for searches.
+	- Added IP address check in the session to prevent people from spoofing sessions
+	- Fixed search index to index entire record contents instead of just previews.
+	- Added optimize table command when building index.
+	- Improved site search options by making it so that you no longer need to have 2 types of 
+	  find_actions in order for the site search to work.  Also removed the 'filter by' option at 
+	  the top of the search results if there is only one type of record in the found set.
+	- Fixed error in IE when clicking '+' sign next to record in list view - undefined variable 
+	  df_add_editable_awareness
+
+Xataface 1.3rc2 2139
+April 9, 2011
+
+	- Fixed serious issue with outputcache that caused users to be able to log in as other users.  
+	  If using output caching you MUST update.
+	- Fixed issue with output cache - warnings on HTTP_IF_NONE_MATCH
+	- Added support for passwordTwice css class that can be applied to a password field to make 
+		users enter the password twice - and forces it to match in order to submit the form.
+	- Added clear_views action and permission to control panel
+	- Added change_password action to actions.ini file so it will show up next to My Profile in the 
+	  UI
+	- Added setPassword method to the authentication tool.  This is used by the change password 
+	  function... Adding this to the authentication tool allows us to tie the functionality to the 
+	  authentication plugin which is the way it should be.
+	- REmoved debugging code from config.inc.php
+	- Fixed issue on 5.3 with output cache... a warning about missing key.
+	- Fixed issue with function options containing arithmetic expressions.
+	- Added support for literals and string arithmetic in the SQL parser.  This has been badly 
+	  needed for a long time.   Still may be lacking support in where clause or function parameters.
+
+Xataface 1.3rc1 2092
+March 31, 2011
+
+	-Fixed path separators and directory separators to be platform independent in installer.
+	-Fixed notice of undefined variable in PHP 5.3.5
+	-Added support for the getNavItem and isNavItemSelected delegate class methods to provide more 
+	 flexibility for the navigation menus.  Now the navigation menu can contain more than just 
+	 tables.
+	-Fixed E_STRICT warning messages (PHP 5.3)
+	-Added support for the --no-query request parameter which prevents the application from 
+	 loading the record set matching the query.  If this parameter is set, then the
+	 Dataface_Application::getRecord() method will return null and the 
+	 Dataface_Application::getResultSet() will return an empty result set.  Similarly the 
+	 Dataface_QueryTool::loadResult() method will return an empty result set if passed the 
+	 --no-query parameter as part of the query in its third parameter.   THis is part of the 
+	 solution to the problem reported at http://xataface.com/forum/viewtopic.php?f=4&t=5983.
+	-Fixed issue with record dialog when adding new records... javascript was being run twice.  
+	 Now it is not
+	-Added user feedback of which column the result set is currently sorted on
+	-Added fix for windows cached file names in getBlob action.
+	 http://www.xataface.com/forum/viewtopic.php?f=4&t=4149
+	-Added support saveMessage() and @@ message notation.  This allows you to pass the 
+	 --msg parameter in the session instead of through the GET url.  You would then use 
+	 the --msg=@@ to indicate that the ['--msg'] property should be used for the message
+	-Added support for the beforeCopy() and afterCopy() triggers
+	-Added some css classes to items in login prompt
+	-Added username to the default reset password email so that the user knows which username's 
+	 password is to be reset
+	-Fixed Calendar positioning problem in IE.  Still needs some more testing but appears to work 
+	 in IE 6 and IE 8.
+	-Added permission 'clear views' specifically for the clear views action.  By default no role 
+	 has access to this.  So only if users with ALL() permission can use the clear views action
+	-Added action to clear the xataface auto-generated views.  This is necessary often when the 
+	 database is modified (in structure only).
+	-Added support for visibility:update directive which allows you to hide fields from the update 
+	 form
+	-Added new blocks before_login_username, after_login_username, after_login_password, and 
+	 after_login_submit on the Dataface_Login_Prompt.html template.  This allows us to add some custom content in those places of the login form.
+	-Fixed style for column-legend so it doesn't overflow
+	-Fixed support for column:label directive.  Added support for column:legend directive to add 
+	 legend for columns in result list and related list
+	-Added support for column:label directive in related list (was already supported in regular list)
+	-Fixed intermittent problem with parse_repeated in case it is called with a blank delimiter.
+	-Fixed strict warning on line 41 of ModuleTool
+	-Added check to ensure that application has a templates_c directory that is writable by the web 
+	 server --- new restriction for 1.3
+	-Fixed installer to use replace instead of update so that first time update works properly
+	-Removed plone_javascript_variables.js.php and plone menu javascript... these aren't used at all so it just added to bloat
+	-Updated getProxyView to work with tables that aren't set up for multilingual content even if 
+	 app is set to use multilingual content.  Proxy views dramatically improve performance when 
+	 tables define the __sql__ directive in the fields.ini file.
+	-Changed url of the Xataface forum to the current address.. This just popped up on some error screens
+	-Fixed a number of E_STRICT warnings.  Refactored LanguageTool and PermissionsTool so that all 
+	 methods can be called either statically or as member methods... Had to create second classes 
+	 for both of these so that getInstance() returns instance of the alternative class... and all 
+	 methods are declared static on the existing class.  This will best maintain compatibility with 
+	 existing source code.  Also fixed a number of assign by reference warnings.  Tested small set 
+	 of main actions in strict mode.  Still much work to be done
+	-Updated ConfigTool and Application to support modules placed in the DATAFACE_SITE_PATH/modules 
+	 directory instead of the DATAFACE_PATH/modules directory.
+	-Updated translations with latest from the translation spreadsheet
+	-Added spanish language file... it is way out of date (circa 2007) but at least it's a start
+
+
+Xataface 1.2.7 1966
+November 29, 2010
+
+	-Added forgot password action... not tied into interface yet but is functional.  
+	-Added getEmailColumn() method to AuthenticationTool.
+	-Added support for show_jump_menu preference
+	-Fixed issue that caused some errors not to display on registration form.  Added improved support for validateRegistrationForm delegate class method so that it is used in both the activate and register method.. and returning a value of 2 (int) indicates that not only did the registration data validate ok, it instructs Xataface to skip the rest of the default validation.  This is helpful if the validation for unique usernames doesn't work with the application's constrains for some reason (e.g. multi-column unique key for users)
+	-Fixed possible XSS script vulnerability with --msg parameter
+	-Updated related record tabs to respect the 'view related records' permission.
+
+
+Xataface 1.2.6 1955
+October 25, 2010
+
+	-Added check that delegate contains the filterPermissions method.  Responding to http://xataface.com/forum/viewtopic.php?f=4&t=5553
+	-Added error codes for withstanding foreign key constraint failures when adding new related records.  See http://xataface.com/forum/viewtopic.php?f=4&t=5530
+	-Updated XML output to support calculated fields on related records.
+	-Fixed xmlTail delegate method support
+	-Added date and time functions to mysql dialect for SQL parser.
+	-Added preferences options to hide related sections in view tab, and record search in view tab
+	-Fixed incorrect icons on some actions: http://xataface.com/forum/viewtopic.php?f=4&t=5507
+	-Fixed bug with container field field names on windows: http://xataface.com/forum/viewtopic.php?f=3&t=5465
+	-Fixed finfo_file() call:  http://xataface.com/forum/viewtopic.php?f=3&t=5492
+	-Changed sql parser to default to MySQL dialect.  This fixes issue in Relationship where parser was running in ansi mode
+	-Added support for external translation management systems by adding an 'External' translation status
+	-Added support for xmlTail delegate method, and xml attribute in fields.ini file to use calculated fields as part of xml dump
+	-Throws exception in relationship init() method now if there is a failure.  This exception is used to catch errors in select widget when trying to make it editable.
+	-Fixed 'otice: Undefined index: auth_type in D:\wamp\www\imm\dataface\Dataface\AuthenticationTool.php on line 84'
+	-Fixed 'Notice: Use of undefined constant key - assumed 'key' in /xataface/Dataface/SearchForm.php on line 347'
+	-Added XATAFACE_DISABLE_PROXY_VIEWS option
+	-Added test for problematic query.  Seems to be working ok.
+	-Disabled proxy views when multilingual content is enabled.  Since the view has a different name than the source table it is unable to be translated by the Query Translator.  This effectively fixes multilingual content translation when grafted fields are used in a table (e.g. __sql__='...')
+	-Fixed so that relationships derived from valuelists do not show up as actions/tabs
+	-Fixed add to select function to correct IE compatibility problems
+	-Added the ability to add new records to valuelists for select widgets inline... but only if the valuelist uses __sql__ to pull its values from the database.
+	-Added the ability to add new records to checkbox groups that are built on a relationship.  Utilizes the RecordDialog widget previously developed for the lookup widget.  Similar things should soon be created for all widgets that use valuelists or relationships.
+	-Forgot to commit update for register action to support the register permission instead of the new permission.
+	-Added check to make sure that a relationship exists in the getField() method.  This will propagate errors up another level so that they make more sense
+	-Fixed getTitles() bug ... it loaded all of the records into memory for the jump menu.. 
+
+
+Xataface 1.2.5 1870
+June 18, 2010
+
+	-Fixed metadata not being updated when saving related record.  Thanks to fantomasdm.
+	-Fixed notice at line 62 of delete_file action that caused a notice when deleting an attachment from a table where there is no mimetype field associated with the container
+	-Fixed XSS scripting vulnerability in search and full-path disclosure
+	-Fixed warning about undefined variable  on line 2046 of Table.php
+	-Added logger class to log notices and error messages
+	-Fixed PermissionsTool delegate to only contain the filterPermissions(&, &) method.  This can be used to filter the permissions on a temporary basis.  In particular it is usedby the register action right now to convert the register permission to the new permission.
+	-Added ajax_record_details, before_ajax_record_details, and after_ajax_record_details slots to the Dataface_AjaxRecordDetails.html template
+	-Added val() method as shortcut to getValue()
+	-Fixed php notice if filter is not set
+	-Fixed issue with blank queries being kept in the query.
+	-Added {filters} tag to templates to show result filters
+	-Fixed broken tags in registration template introduced by last commit
+	-Added heading to registration form and slot to override this header: registration_form_label
+	-Added Dataface_Registration.label string which is used for heading of the registration form
+	-Fixed register action to use the register permission instead of the new permission.
+	-Added support for a permissions tool delegate if you need to slightly modify how permissions are handled temporarily
+	-Added support for before_authenticate trigger in application delegate class
+	-Added support for startSession method in application delegate class
+	-Fixed 'Notice: Undefined variable: HTTP_SESSION_VARS' on line 78 of config.inc.php
+
+
+
+Xataface 1.2.4 1811
+May 13, 2010
+
+	- Updated strings to use Xataface instead of Dataface
+	- Updated fineprint finally to show 2010 and Xataface instead of Dataface
+	- Fixed toJS() method to use json_encode() instead of adhoc formation that sometimes failed for complex content
+	- Added xhtml editing and remove formatting buttons to nicEdit
+	- Fixed issue with Calendar not showing correct start times for events.
+	- Fixed issue with grafted fields overriding the field definition of already existent fields.  This would cause problems for the new related record form and possibly elsewhere (http://xataface.com/forum/viewtopic.php?f=4&t=5154)
+	- Fixed view tab bug where nothing appears if first field is part of a field group. http://xataface.com/forum/viewtopic.php?f=4&t=5168
+	- Fixed unquoted string in preg_grep (line 874 error)
+	- Default display expanded now for field groups in find form.  I'm not sure how these ever was set to default collapsed.
+	- Fixed issue with updating fields with the value 0.  Used to ignore these updates, confusing it with a blank update.
+	- Added support for getTemplateContext() delegate method
+	- If parser fails caching is aborted
+	- Fixed redirect after adding new record to go to view tab if the user doesn't have the edit permission for the record.
+	- Added after_action_activate event.
+	- fixed path of query_cache_log
+	- Added preliminary support for duplicate column names in relationships.
+
+	- Fixed error checking if unquoted string is defined.
+
+
+	- Made a whole host of changes to try to support PHP 5.3.  In particular I created a special implementation of parse_ini_file to run for PHP 5.3.0 and 5.3.1 to work around bugs in their implementation (these bugs are reportedly fixed in SVN and thus should be part of 5.3.2, but this is a stop-gap measure. Other changes include removing =& notation for new objects (as this is deprecated), and removal of all ereg() calls where I could find them (also deprecated). 
+	- All ereg calls were changed to preg_match calls.
+	- Removed explicit error reporting call.
+	- Added headings to CSV export when no relationship is present.  For consistency.
+	- Set constant when stripping slashes for magic_quotes_gpc so that future attempts can be cancelled based on it already occuring (e.g. HTML_QuickForm).
+	- Disabled strip slashes in QuickForm if they've already been stripped in config.inc.php.
+	- Fixed slashes when magic_quotes_gpc is enabled.  This was causing all kinds of problems with ajax methods like the datagrid.
+	- Fixed related record form so that grafted fields only show up if they are marked as transient.
+	- Added support for secure flag on container fields to use the get_blob method so that it respects application permissions.  Note that it is necessary to secure the directory that stores the file uploads manually to prevent unauthorized downloads.
+	- Updated skintool to support application delegate breadcrumbs method.
+	- Removed short open tags so it should now be compatible if short open tags are turned off.
+	- Changed single_record_search to respect the 'view' and 'view in rss' permissions.
+	- Added support for getSingleRecordSearchFeed delegate class method to customize the single record search feed.  Works identical to the getFeed() method except that it also takes a Dataface_Record as the first parameter.
+
+
+Xataface 1.2.3b1 1690
+Jan. 5, 2010
+	-Changed to make compatible with PHP 5.3.
+  	- Included workaround for parse_ini_file bugs until they're fixed in
+  	  PHP
+	-Removed/replaced constructs and functtions that caused deprecation
+warnings.
+
+Xataface 1.2.2 1616
+Oct. 25, 2009
+
+	-Bug fixes for query caching.
+	-Fixed bug with lookup widget getting stuck after insert new record.
+	-Added floating menu support to nicEdit
+	
+Xataface 1.2.1 1472
+Sept. 25, 2009
+	- Fixed javascript bug that prevented history tool from working properly.
+
+Xataface 1.1.5 978
+Feb. 16, 2009
+	- added delete_delete selected action to allow users to delete records by selecting
+	  them in list view.
+	- added "delete selected" permission to allow/deny access to delete_selected action
+	- df_init() now returns reference to Dataface_Application object.
+	- delete_found action now requires delete found permission instead of delete permission.
+	- implemented Dataface_Record::delete() method.
+	
+Xataface 1.1.4 971
+Feb. 11, 2009
+	- added ability to delete attached files (issue #98)
+	- Fixed issues with searches on related fields when relationship defined
+	  with table aliases as part of the query.
+	- Grafted fields are now included in related records.
+
+Xataface 1.1.3 928
+Feb. 3, 2009
+	- added label_link directive for fields.ini file.
+	- fixed bug in find form that caused fields to be pushed below instructions.
+
+Xataface 1.1.2 900
+Jan. 26, 2009
+	- added support for struct parameter in fields.ini file.
+	- fixed issue with Dataface_Table::getType() not recognizing unsigned fields properly.
+
+Xataface 1.1.1 860
+Jan. 12, 2009
+
+	- Improved functionality on SQL parser to handle more cases.  The particularly
+	  affects sites that use multilingual content.  Possibly will help relationships
+	  to support wider array of __sql__ values.
+
+Xataface 1.1 840
+Jan. 5, 2009
+	
+	- Includes quite a few bug fixes.
+	- Added triggers for after_action_login and after_action_logout
+	- Added support for nicEdit HTML editor. (Use widget:editor=nicEdit)
+	- Replaced scriptaculous with jquery to power expand/collapse of sections
+	- Added option reversion to old-style resultlist controller via preferences
+		use_old_resultlist_controller=1
+	- Changed look on tabs when tabs are used on the edit form. Much cleaner look.
+	- Added --default-preview-length GET parameter to set the maximum length to be shown of text
+      fields in list view.
+      
+    
+    For full list of changes, use SVN:
+    	svn log -r 561:840 http://weblite.ca/svn/dataface/core/trunk
+	
+Xataface 1.0.7 561
+Nov. 3, 2008
+	
+	Fixed bug #391.  This is a critical fix.
+
+Xataface 1.0.6 556
+Nov. 1, 2008
+	
+	Added feature #174 : Support for renderCell() in related list.
+
+Xataface 1.0.5 555 (bugfix release)
+Nov. 1, 2008
+	
+	Fixed bugs 198, 269, and 388
+
+Xataface 1.0.4 530 (bugfix release)
+October 30, 2008
+
+	- Many minor bug fixes.
+	- Many stability improvements.
+	- Support for alternate mail function to be specified for registration email in conf.ini file
+	- Grid widget respects permissions on front-end now.
+	- Fixed segmentation faults issue on PHP 5
+	- Fieldgroups can now have a description
+	- Empty fieldgroups no longer displayed on form.
+	- Still much internationalization to do.
+	
+
+Xataface 1.0-beta-3
+June 16, 2008
+
+	Another bug fix release - but a couple of new features have been 
+	added also:
+	
+	Bugs Fixed:
+		http://bugs.weblite.ca/view.php?id=179
+			Page cannot be found when adding new related record
+			
+		http://bugs.weblite.ca/view.php?id=180
+			Fatal Error. undefined function init()
+			
+		http://bugs.weblite.ca/view.php?id=128
+			Field groups in related record form display in-line
+			
+		http://bugs.weblite.ca/view.php?id=130
+			Submit button missing from find forms with relationships
+			
+		http://bugs.weblite.ca/view.php?id=165
+			Cannot use if() function in __sql__ of fields.ini file.
+			
+		http://bugs.weblite.ca/view.php?id=164
+			Greater than/Greater than or equal queries on Date fields do not work
+			
+		http://bugs.weblite.ca/view.php?id=149
+			Queries for value '0' result in error.
+			
+		http://bugs.weblite.ca/view.php?id=146
+			New related record form shows fields twice
+			
+		http://bugs.weblite.ca/view.php?id=119
+			Export CSV embedded quotes handled incorrectly in PHP4
+			
+		
+			
+	Features added:
+		http://bugs.weblite.ca/view.php?id=175
+			Drag & Drop reordering of related records
+			
+		
+
+Xataface 1.0-beta-2
+March 29, 2008
+
+	Bug Fix release.
+	This is an incremental release that fixes some of the bugs identified
+	by users on 1.0-beta-1.
+	
+	Bugs Fixed:
+		http://bugs.weblite.ca/view.php?id=107
+			Autocomplete broken.
+			Thanks to S.T. Stoddard for identifying this.
+			
+		http://bugs.weblite.ca/view.php?id=105
+			Checkbox alignment off
+			Thanks to S.T. Stoddard for identifying this.
+			
+		http://bugs.weblite.ca/view.php?id=106
+			Multiselect only commits one value to database
+			Thanks to S.T. Stoddard for identifying this.
+			
+		http://bugs.weblite.ca/view.php?id=115
+			Grouping fields doesn't work
+			Thanks S.T. Stoddard for identifying this.
+			
+		http://bugs.weblite.ca/view.php?id=116
+			'group' widget doesn't work (errors).
+			Thanks S.T. Stoddard for identifying this.
+			
+		http://bugs.weblite.ca/view.php?id=117
+			Readme file contains links to old web site.
+	
+
+Xataface 1.0-beta-1
+March 2008
+
+	See Xataface manual for full features.
+
+Dataface 0.8 unstable
+June 12, 2007
+	Changes
+		1. Added FormTool class to factor out all of the generic form code from
+			Dataface_QuickForm.  Also added classes Dataface_FormTool_xxx for
+			each widget type.  Creating custom widgets is not possible and 
+			easy.  This will form the foundation of a new API for building 
+			widgets.  Developers should be able to develop and install new
+			widgets easily.
+		2. Fixed bugs with Relationships using vocabulary:existing option 
+		   (variables not defined).
+		   
+Dataface 0.7.3.3
+June 11, 2007
+	Changes
+		1. Added Ontology classes:
+			The Ontology classes provide a framework for dealing with data in a more  
+			generic way.  Ontologies can be created that wrap tables in any database  
+			and allow them to be used in a common way.  For example, a news ontology  
+			could be created that would allow you to work with any table as if it 
+			stored news items.  It would find the fields that are used for the 
+			pertinent pieces of data and allow them to be accessed in a common way.
+			
+			This is used by the registration actions.
+			
+		2. Added getByID and setByID static functions to IO.php to allow records and
+			fields to be accessed by URI.
+			
+		3. Minor syntax bugfix in Table.php
+		
+		4. In templates/Dataface_RecordHistory.html:
+			Fixed action to restore records to previous version.  The previous action
+			was missing the -table POST parameter.  This parameter was important for
+			locating the correct history record.
+			
+		5. In templates/Dataface_MainTemplate.html:
+			Added more javascript global variables to make it easier to reference
+			Dataface URLs from javascript functions: DATAFACE_SITE_HREF, DATAFACE_URL
+			
+		6. In SkinTool.php:
+			Added some more user friendly error messages to appear when the compiled
+			templates directory cannot be accessed.  This is important for
+			shared servers with SAFE mode enabled because Dataface won't
+			be able to create the subdirectories that it wants to create
+			in the templates_c directory, so the user will have to create
+			them himself.  The error messages now inform the user what has happened
+			and instructs him on how to create the necessary directories himself.
+		
+		7. DB.php
+			Added debugging output option in Dataface_DB if the DATAFACE_DEBUG_DB
+			constant is set.
+			
+		8. LanguageTool.php:
+			Fixed minor bug that prevented languages other than English from showing
+			up as bold in the language selector when they are selected.
+			
+		9. Added new register action to allow users to register.  Created activate   
+			action also to allow users to activate their accounts from an automated   
+			email.
+			Modified the actions.ini file also to make it more readable, while adding
+			the two new actions.
+			
+		
+Dataface 0.7.3.2
+May 30, 2007
+
+	Changes
+	
+		1. Removed extra unused libraries from distribution.
+		
+Dataface 0.7.3
+May 30, 2007
+
+	Changes
+	
+		1. Updated SortControl.  Not dropdown anymore.  Now honours the sortable
+			parameter in the fields.ini file (e.g. sortable=1 or sortable=0)
+			
+		2. Fixed History action to now give fatal error if the record has no history yet.
+		
+		3. Added visibility:history and  visibility:summary options to make 
+		   fields visible or not in the summary view and history details view.
+		   
+		4. Added transient fields (fields which appear on the new and edit forms
+			but aren't bound to the database).  Fields.ini file option: transient = 0 
+			or transient = 1
+			
+		5. Added checkbox form options for the relationship view to allow certain
+		   relationships to be managed via simple checkboxes.
+		   
+		6. Added "delegate" actions option.  Any action can now have a delegate
+		   property to specify another action to work in its place.  This makes
+		   it easy to override any of the built-in actions.
+		   
+		7. Minor bugfixes.
+		
+Dataface 0.7.2
+May 16, 2007
+
+	Changes
+		
+		1. Fixed ENUM field searching on find form to do exact matching by default.
+		2. Small fix in RecordView.php to allow calculated fields to be used as
+			logo fields.
+			
+
+Dataface 0.7.1
+May 10, 2007
+	
+	Changes
+	
+		1. Added register action.
+
+Dataface 0.7 dev 4
+May 7, 2007
+
+	Changes
+		
+		1. Added fr.ini and de.ini language files for French and German translations
+			respectively.  Thanks to Jean Carafantan for the French translation and
+			Daniel Siefert for the German Translation.
+			
+		2. Added credits for translations to associated language ini file. 
+		   (used Google translate for the wording.
+		   
+Dataface 0.7 dev 3
+May 5, 2007
+	
+	Changes
+	
+		1. PHP 4 Compatibility.
+		2. Replaced call_user_func calls with variable function calls so that 
+			delegate class calls will pass $record by reference on PHP 4.
+		3. Fixed Output cache glitch with GZIP encoding that caused problems 
+			on IE 6.
+		
+Dataface 0.7 dev 2
+May 3, 2007
+	
+	Changes
+	
+		Made it so the view tab logo can be disabled in the preferences by setting
+		hide_record_view_logo to 1
+
+Dataface 0.7 dev 1
+May 3, 2007
+	
+	Changes
+	
+		- Almost too many to cover here, but:
+		1. Overrideable actions (using > notation)
+		2. Alternative list view (Dataface_List_View_summary.html)
+		3. New improved view tab.
+		4. Scriptaculous for collapsible sections.
+		5. Metadata can now be associated with valuelist values - and included in the "class"
+			attribute of resulting checkboxes.
+		6. _disallowed_tables and _allowed_tables sections in conf.ini file allow
+			you to disallow access to certain tables.
+		7. Improved phpthumb integration.
+		8. New summary list and glance list templates can be used to quickly
+			display an assortment of records.
+		9. Improved guessing of domain tables in relationships.
+		10. section__#section_name# methods can be used to define sections in
+			the view tab.
+		11. APC integration for Configtool so that config files will automatically
+			be cached if APC is installed.
+		12. Action Tool actions can now refer to the $record object to mean the
+			record that the action is applied to (not just the current record
+			of the request).
+			
+
+
+Dataface 0.6.14 dev 5
+March 15, 2007
+	Changes
+		
+		- Fixed FeedTool getLink() method to change the action to 'list' if it
+		  is feed.  That way the link won't take the user to the RSS feed - it
+		  will take them to the result list.
+		  
+		- Extracted out all english strings into en.ini.
+		
+		- Added xml actions to prepare for a Dataface Desktop client.
+		
+		- Added http authentication (auth_type=http)
+		
+Dataface 0.6.14 dev 4
+March 1, 2007
+
+	Changes
+	
+		- Import ModuleTool in the constructor of Application if modules are 
+		  defined in case pages use template but don't call handleRequest()
+		  
+Dataface 0.6.14 dev 3
+March 1, 2007
+	
+	Changes
+	
+		- Fixed import records action so that it returns the user to the proper
+		  part of the application after the import is complete.
+		  
+		- Cleaned up the RSS functionality.
+		
+		- Finished/Added documentation for the Feedburner module
+		
+		- Added build instructions to build.xml file to accommodate Feedburner
+		  module.
+		  
+Dataface 0.6.14 dev 2
+Feb. 28, 2007
+
+	Major Feature Additions:
+	
+		- Modules framework
+			- Define any config file inside a module directory.
+			- Override slots and blocks within a module's directory.
+			- Define actions in the actions directory of a module.
+			
+			Still to do:
+				- Allow getPermissions definition in a module (this will be huge)
+				- Improve handling of permissions.ini file within module.
+				- Allow delegate classes to be defined in a module.
+		
+		- Feedburner module
+			- Created for DataVinci (Thank you!!)
+			
+	Minor Feature Additions:
+	
+		- 'onclick' attribute added to actions.
+		
+	
+Dataface 0.6.14 dev 1
+Feb. 14, 2007
+
+	Changes
+	
+		- Basic implementation of copy records form and update records form.
+		
+		- Added ability to perform actions on particular selected records in list
+		  view.
+		  
+		- Added new selection framework to be able to perform actions on only
+		  records that are selected in list mode or in a related list.
+		  
+		- Added "Import records" action to the list view.
+		
+		- Updated the Import Records template to include better "helps".
+		
+		- Added ability to add import filter descriptions in the language ini files.
+		  using key convention import_filters:<filter name>.
+		
+		
+Dataface 0.6.14
+Feb. 12, 2007
+
+	Changes
+	
+		- Updated translate_found_babelfish action so that it will also translate
+		  records that are already machine translated but marked for update.
+		  
+		- Added ability for ConfigTool to load configuration from the database.
+		  Still incomplete but ready to build upon.
+		  
+		- Added editable.js, df_editable, and smarty editable tag that is used
+		 to make parts of the UI editable right in the browser.  This is moving 
+		 towards full layout control TTW.
+		 
+Dataface 0.6.13r4
+Feb. 9, 2007
+
+	Changes
+	
+		- Added class names to tables and cells in edit forms so that they can be
+		  more easily manipulated using CSS.
+		  
+Dataface 0.6.13r3
+Feb. 9, 2007
+
+	Changes
+	
+		- Changed the fix in Table.php to eliminate the need to import Dataface_AuthenticationTool.
+		
+Dataface 0.6.13r2
+Feb. 9, 2007
+
+	Changes
+	
+		- Fixed bug that caused ordering columns to not show up in related lists.
+		
+		- Also fixed fatal error in Table.php caused if authentication was not
+		  being used.  (Added import of AuthenticationTool).
+		  
+Dataface 0.6.13
+February 8, 2007
+
+	Changes
+	
+		- Added __filters__ section to the fields.ini file that allows users
+		  to define filters
+		  
+Dataface 0.6.12r2
+
+	Changes
+	
+		- Bug fixed with delete action that caused it to always say permission
+		  denied (Thanks Graham Geller).
+		  
+		- Added actions attribute to fields.ini to specify field actions.  Now
+		  actions can be attached to any field.  These will be reflected as buttons
+		  on the edit form.
+		  
+		- added setSecurityFilter() and getSecurityFilter() methods to Dataface_Table
+		  which limit the queries.  This allows you to limit users to only certain 
+		  records in a table.
+		  
+Dataface 0.6.12r1
+
+	Changes
+	
+		- Fixed serious bug with permissions that prevented Application delegate
+		 class from receiving record.  (Thanks Graham Geller and Martin Pruss)
+		 
+		- Improved handling of default labels.  Now underscores are converted to
+		  spaces by default for field labels.
+		  
+		- improved display of array fields (e.g. table fields) content for 
+		  view and list tabs.
+
+Dataface 0.6.12
+February 6, 2007
+
+	Changes
+		
+		- Added Content-dispoistion: filename header when downloading blob fields
+		
+		- Minor permissions fixes when no records are found.
+		
+		- Added ability to edit valuelists.
+		
+Dataface 0.6.11
+January 22, 2007
+
+	Changes
+	
+		- Added export_csv action to export result lists to CSV (comma-separated
+		  value) format.
+		  
+Dataface 0.6.10
+January 18, 2007
+
+	Changes
+		
+		- Numerous bug fixes.
+		
+		- Improved permissions handling
+		
+		- added save() method to Dataface_RelatedRecord
+		
+		- added df_get_record_by_id function in public api.
+		
+		- added dhtmlxGrid and a portal widget (not yet finished).
+		
+Dataface 0.6.9r1
+October 2, 2006
+
+	Changes
+		- Modified AuthenticationTool to more easily allow for modular plugins.
+		
+		- Support for CAS Authentication module.. not included with distribution.
+		
+Dataface 0.6.8
+September 21, 2006
+
+	Changes
+	
+		- Fixed Record tree-menu so that it works in IE 6, Safari, and Firefox (both Mac and Windows)
+		
+		- Added ajax expandable records to list tab so that users can click the "expand" button
+		  next to a row to see its record details expand below it.
+
+Dataface 0.6.7
+September 20, 2006
+
+	Changes
+		
+		- Added Record tree-menu in the left column for records. (Sponsored by Advanced Medical (advanced-medical.com))
+		
+		- Added preliminary AJAX support.  
+		
+		- Minor stylesheet changes.
+		
+		- Added toJS() method to Dataface_Record to be able to output object as Javascript object.
+
+Dataface 0.6.6
+September 16, 2006
+
+	Changes
+	
+		- Added history tab if the [history] section of the conf.ini is added.
+		
+			- Now history is kept on records.  Records can be restored to 
+				any previous version.
+				
+		- Changed default behavior to include sessions.  Session is automatically 
+		  started by the Dataface_Application::display() method.
+		  
+		- other small bugfixes.
+		
+
+Dataface 0.6.0
+April 26, 2006
+	
+	Changes
+	
+		- permissions.ini file
+		
+			- Added permission.ini file to dataface with core permissions and roles
+			
+			- Added support for overridden permissions in application/permissions.ini file
+			
+			- Added support for table-level permissions (tables/tablename/permissions.ini)
+			
+			- deprecated tablePermissions() method in delegate class - now use getPermissions()
+		
+		- language files
+		
+			- Added lang directory to dataface with ini files for each language translation.
+			
+			- Added Dataface_LanguageTool to manage translations
+			
+			- Support for application / table -level language files
+		
+		- actions.ini files
+		
+			- actions.ini file in dataface directory to define global actions
+			
+			- support for application/table level actions.ini files
+			
+			- actions directory to contain custom controllers for actions.
+			
+			- support for application/table-level actions folders
+		
+		- modular actions framework
+		
+			- Custom actions can be added at table/application level
+			
+			- permissions can be applied to each action
+		
+		- delegate class overriding of ini properties
+		
+			- any properties in the fields.ini file can now be overridden in the delegate
+			  class.
+		
+		- deprecated the TableView class in favour of templates
+			
+			- Dataface_SkinTool adds a number of tags that can be used in templates to obtain parts of UI
+			
+		- Enriched features in Application class to be able to handle requests, load records, etc...
+		
+
+Dataface 0.5.3
+March 20, 2006
+
+	Changes
+	
+		- Refactored all writing and deleting functionality into Dataface_IO class.
+		
+		- Added event handling for following events:
+		
+			- beforeSave, afterSave
+			- beforeInsert, afterInsert
+			- beforeUpdate, afterUpdate
+			- beforeDelete, afterDelete
+			- beforeAddRelatedRecord, afterAddRelatedRecord
+			- beforeAddNewRelatedRecord, afterAddNewRelatedRecord
+			- beforeAddExistingRelatedRecord, afterAddNewRelatedRecord
+			
+			Methods of the appropriate names are defined in the delegate class to handle
+			these events.
+			
+		- Fixed minor syntax errors that cause problems on some systems.
+		
+		- added toRecord() and toRecords() methods to Dataface_RelatedRecord class to extract
+		  Dataface_Record objects based on values of related records.
+		  
+		- Added more Selenium test suites for functional testing.
+		
+	Known Bugs
+	
+		- Validation for grouped fields has not been fixed yet.
+		
+		- Relationships to the same table must be done using SQL (can't use the simplified INI syntax)
+		
+
+Dataface 0.5.2r3
+March 11, 2006
+
+	Changes
+	
+		- Added PEAR.php to the distribution and removed requirement for PEAR.php
+		  until the include paths have been added properly. This corrected an error
+		  when used in Safe mode on shared hosts (so PEAR.php was inaccessible).
+
+Dataface 0.5.2
+March 10, 2006
+	
+	Major Changes
+	
+		- Added Calendar widget (widget:type = 'calendar')
+		- Made Calendar widget the default widget type for date and datetime fields.
+	
+	Minor Changes
+	
+		- Made 'static' the default widget type for Timestamp fields.
+
+Dataface 0.5.1
+March 4, 2006
+
+	Major Changes
+	
+		- Improved compatibility with Windows/IIS, and CGI
+		
+		- Improved compatibility with MySQL 5
+		
+		- Fixed serious bug with "Delete Found" records which caused "search" 
+		  field filters to be ignored.
+		  
+	Specific Changes
+	
+		- Changed path separator to be platform independent (config.inc.php)
+		
+		- Fixed redirects to use absolute urls in QuickForm.
+		
+		- Added missing "SERVER" variables that are not available to CGI
+		
+		- Fixed QueryBuilder so that it does not attempt to place empty strings
+		  into auto increment fields.
+		  
+		- Updated Serializer so that it formats data to be compliant with strict
+		  mode in MySQL 5.
+		  
+		- FIxed a number of errors caused by returning literal values from functions
+		  that are to return by reference (Author's opinion is that this is one
+		  of the dumbest things to be added to PHP).
+		  
+		- Added permissions validation to the Delete record form.  Also added recognition
+		  of the '-search' parameter when deleting records.  This was a major bug.
+		  
+	To DO:
+	
+		- Likely many more compatibility problems exist for Windows, CGI, and MySQL 5.
+			Need to create more unit tests and run them on Windows.
+			
+		- Change the makesite script to be compatible with Windows.
+		  
+		
