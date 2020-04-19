@@ -2232,12 +2232,30 @@ class Dataface_Table {
 			}
 			//$conf[$key] = array_merge_recursive_unique($this->_global_field_properties, $conf[$key]);
 		}
+
+		$selectors = array();
+
 		foreach ($conf as $key=>$value ){
 			if ( $key == '__sql__' and !is_array($value) ){
 				$this->_sql = $value;
 				continue;
 			}
 			
+			if (is_array($value) and strpos($key, '=') !== false) {
+			    // This is a selector
+			    $selectors[$key] = $value;
+			    foreach ($this->_fields as $fkey=>$fval) {
+			        if (isset($fval['Type']) and $key === 'Type='.$fval['Type']) {
+				    $selParsed = array();
+				    $this->_parseINISection($value, $selParsed);
+				    $this->_fields[$fkey] = array_merge_recursive_unique($this->_fields[$fkey], $selParsed);
+				}
+			    }
+
+			    continue;
+			}
+
+
 			if ( is_array($value) and @$value['decorator'] ){
 				$event = new StdClass;
 				$event->key = $key;
@@ -2463,6 +2481,9 @@ class Dataface_Table {
 		// groups that don't have an explicit definition in the ini files.
 		// This step creates those implicit groups.
 		foreach (array_keys($this->_fields) as $key){
+		    if (isset($field)) unset($field);
+		    $field =&  $this->_fields[$key];
+
 			if ( isset($this->_fields[$key]['group'])  ){
 				$grpname = $this->_fields[$key]['group'];
 				if ( !isset( $this->_fieldgroups[$grpname] ) ){
@@ -2525,6 +2546,10 @@ class Dataface_Table {
 					if ( !isset($widget['atts']['size']) ){
 						if ( $this->isInt($key) or $this->isFloat($key) ){
 							$widget['atts']['size'] = 10;
+						} else if (stripos($field['Type'], 'VARCHAR(') === 0) {
+						    $fieldSize = preg_split('/[()]/', $field['Type'])[1];
+			      $widget['atts']['size'] = min(intval($fieldSize), 60);
+			      $widget['atts']['maxlength'] = $fieldSize;
 						} else {
 							$widget['atts']['size'] = 30;
 						}
@@ -4377,7 +4402,45 @@ class Dataface_Table {
 	 *
 	 * Methods for working with import filters and importing records.
 	 */
-	 
+
+	static $knownImportFilters = null;
+
+	/**
+	 * Checks to see if this table has any import filters defined.  This uses caching
+	 * to try to minimize the amount of work to calculate this because this is called
+	 * every request by the import action to determine whether it should be shown
+	 * in the UI.
+	 */
+	function hasImportFilters() {
+	    if (!isset(self::$knownImportFilters)) {
+	      self::$knownImportFilters = array();
+	      if (DATAFACE_EXTENSION_LOADED_APC) {
+		  self::$knownImportFilters = apc_fetch(DATAFACE_SITE_PATH.'/import_filters');
+		  if (!isset(self::$knownImportFilters) or !@self::$knownImportFilters['.mtime'] or ($this->_hasDelegateFile() and self::$knownImportFilters['.mtime'] < filemtime($this->_delegateFilePath()))) {
+		      self::$knownImportFilters = array('.mtime' => time());
+		      apc_store(DATAFACE_SITE_PATH.'/import_filters', self::$knownImportFilters);
+		  }
+	      } else if (@$_SESSION and @$_SESSION['import_filters']) {
+		  self::$knownImportFilters = $_SESSION['import_filters'];//, self::$knownImportFilters;
+		  if (!isset(self::$knownImportFilters) or is_string(self::$knownImportFilters) or !@self::$knownImportFilters['.mtime'] or ($this->_hasDelegateFile() and self::$knownImportFilters['.mtime'] < filemtime($this->_delegateFilePath()))) {
+		      //  Only persist this for up to 10 minutes in case the dev
+		      // makes changes.
+		      self::$knownImportFilters = array('.mtime' => time());
+                      $_SESSION['import_filters'] = self::$knownImportFilters;
+		  }
+	      }
+	    }
+	    if (!isset(self::$knownImportFilters[$this->_tablename])) {
+	        $filters = $this->getImportFilters();
+                self::$knownImportFilters[$this->_tablename] = count($filters)>0;
+	        if (DATAFACE_EXTENSION_LOADED_APC) {
+		    apc_store(DATAFACE_SITE_PATH.'/import_filters', self::$knownImportFilters);
+	        } else if (@$_SESSION) {
+                    $_SESSION['import_filters'] = self::$knownImportFilters;
+		}
+	    }
+	    return self::$knownImportFilters[$this->_tablename];
+	}
 	 
 	/**
 	 * @brief Import filters facilitate the importing of data into the table.
