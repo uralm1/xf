@@ -116,10 +116,10 @@
 		    var moreButton = $('<a>')
 		        .addClass('listing-show-more-button')
 		        .attr('href','#')
-		        .html('...')
+		        .html('&rarr;')
 		        .click(showMore).
 		        get(0);
-		    var lessButton = $('<a href="#" class="listing-show-less-button">...</a>').click(showLess).get(0);
+		    var lessButton = $('<a href="#" class="listing-show-less-button">&larr;</a>').click(showLess).get(0);
 		    
 		    function showMore(){
 		        var width = $(td).width();
