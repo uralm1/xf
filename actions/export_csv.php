@@ -42,8 +42,10 @@ if ( !function_exists('fputcsv') ){
 
 class dataface_actions_export_csv {
 	
+        private $csv_delimiter; //declare member var
+
         function writeRow($fh, $data, $query){
-            fputcsv($fh, $data,",",'"');
+            fputcsv($fh, $data, $this->csv_delimiter,'"');
         }
         
         function startFile($fh, $query){
@@ -68,15 +70,37 @@ class dataface_actions_export_csv {
 		set_time_limit(0);
 		import('Dataface/RecordReader.php');
 		$app =& Dataface_Application::getInstance();
+
+                $this->csv_delimiter = @$app->_conf['export_csv']['delimiter'];     //get delimiter key from conf.ini
+                if (!$this->csv_delimiter || $this->csv_delimiter==''){             //if no delimiter specified
+                    if ( @$app->_conf['export_csv'] and @$app->_conf['export_csv']['format'] == 'excel'){   
+                        $this->csv_delimiter ="\t";                                 //  default to tab when using excel format
+                    }else{
+                        $this->csv_delimiter =",";                                  //  default to comma when using plain csv format
+                    }
+                }elseif (strtolower($this->csv_delimiter)=='\\t'){    // \t is not recognized as tab in ini parsing and so we have to check for the string '\t'
+                    $this->csv_delimiter ="\t";                          
+                }elseif (strlen($this->csv_delimiter)!=1){
+                    die('Error in conf.ini: length of csv_delimiter cannot be greater than 1'); 
+                }elseif ($this->csv_delimiter=='"'){
+                    die('Error in conf.ini: csv_delimiter cannot be set to double quote (")'); 
+                }
+
 		$query = $app->getQuery();
-		$query['-limit'] = 9999999;
-		if (isset($query['--limit'])) {
-		    $query['-limit'] = intval($query['--limit']);
-		}
+		// Better to set the skip and limit in the actions.ini file
+		//$query['-limit'] = 9999999;
 		$table =& Dataface_Table::loadTable($query['-table']);
 		if ( isset($query['-relationship']) and @$query['--related'] ){
-			$query['-related:start'] = 0;
-			$query['-related:limit'] = 9999999;
+			if (!isset($query['-related:start'])) {
+  			    $query['-related:start'] = 0;
+    			} else {
+  			    $query['-related:start'] = intval($query['-related:start']);
+    			}
+			if (!isset($query['-related:limit'])) {
+  			    $query['-related:limit'] = 9999999;
+    			} else {
+  			    $query['-related:limit']  = intval($query['-related:limit']);
+    			}
 			$record =& $app->getRecord();
 			$relationship =& $table->getRelationship($query['-relationship']);
 			
@@ -169,7 +193,7 @@ class dataface_actions_export_csv {
         }
 	
         function outputExcelCsv($fh, $query, $app){
-            $sep  = "\t";
+            $sep  = $this->csv_delimiter;
             $eol  = "\n";
             $stdout = fopen('php://output', 'w');
             header('Content-Description: File Transfer');
@@ -177,7 +201,7 @@ class dataface_actions_export_csv {
             header('Content-disposition: attachment; filename="'.$query['-table'].'_results_'.date('Y_m_d_H_i_s').'.csv"');
             header('Content-Transfer-Encoding: binary');
             fwrite($stdout, chr(255) . chr(254));
-            while ( ($row = fgetcsv($fh, 0, ',', '"')) !== false ){
+            while ( ($row = fgetcsv($fh, 0, $this->csv_delimiter, '"')) !== false ){
                 //print_r($row);
                 ob_start();
                 fputcsv($stdout, $row, $sep);

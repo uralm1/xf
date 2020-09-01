@@ -164,7 +164,6 @@ class Dataface_Table {
 	 */
 	var $_cookedValuelists=array();
 	
-	
 	/**
 	 * A map that can get used to register "display" fields for a column.  These
 	 * work similar to vocabularies except that they don't require a vocabulary
@@ -513,7 +512,10 @@ class Dataface_Table {
 	
 	}
 	
-	
+	public function shouldCountRows() {
+	    return !@$this->_atts['disable_row_counts'];
+	}
+
 	/**
 	 * @brief Constructor. Please use Dataface_Table::loadTable() instead.
 	 * @param string $tablename The name of the table to load.
