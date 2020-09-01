@@ -1974,6 +1974,9 @@ class Dataface_Table {
 		return $schema;
 	}
 	
+	public function isSingleton() {
+	    return @$this->_atts['singleton'];
+	}
 	
 	
 	/**
@@ -2059,7 +2062,13 @@ class Dataface_Table {
 				
 				if ( $delegate !== null and method_exists($delegate, "field__$fieldname")){
 					if ( isset($this->_atts[$fieldname]) ){
-						$schema = array_merge_recursive_unique($this->_newSchema('calculated',$fieldname), $this->_atts[$fieldname]);
+					    //echo print_r($this->_atts[$fieldname]);
+					    //echo print_r($this->_newSchema('calculated',$fieldname));
+					    $attsParsed = array();
+					    $this->_parseINISection($this->_atts[$fieldname], $attsParsed);
+						$schema = array_merge_recursive_unique($this->_newSchema('calculated',$fieldname), $attsParsed);
+						//print_r($schema['widget']);
+						//exit;
 					} else {
 						$schema = $this->_newSchema('calculated', $fieldname);
 					}
@@ -2547,7 +2556,8 @@ class Dataface_Table {
 						if ( $this->isInt($key) or $this->isFloat($key) ){
 							$widget['atts']['size'] = 10;
 						} else if (stripos($field['Type'], 'VARCHAR(') === 0) {
-						    $fieldSize = preg_split('/[()]/', $field['Type'])[1];
+						    $parts = preg_split('/[()]/', $field['Type']);
+						    $fieldSize = $parts[1];
 			      $widget['atts']['size'] = min(intval($fieldSize), 60);
 			      $widget['atts']['maxlength'] = $fieldSize;
 						} else {
