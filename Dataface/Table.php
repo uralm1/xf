@@ -697,6 +697,7 @@ class Dataface_Table {
 				} else if (substr($this->_fields[$key]['Type'], 0, 3) == 'set') {
   				    $this->_fields[$key]['widget']['type'] = 'checkbox';
     				    $this->_fields[$key]['repeat'] = true;
+    				    $this->_fields[$key]['separator'] = ',';
 				}
 			}
 			if ( DATAFACE_EXTENSION_LOADED_APC ){
@@ -1654,6 +1655,15 @@ class Dataface_Table {
 						$schema = $this->_newSchema('text',$fieldname);
 	
 						$curr = array_merge_recursive_unique($schema, $curr);
+						$widget =& $curr['widget'];
+						// Now we do the translation stuff
+                          $widget['label'] = df_translate('tables.'.$curr['tablename'].'.fields.'.$fieldname.'.widget.label',$widget['label']);
+                          $widget['description'] = df_translate('tables.'.$curr['tablename'].'.fields.'.$fieldname.'.widget.description',$widget['description']);
+                          if ( isset($widget['question']) ){
+			    $widget['question'] = df_translate('tables.'.$curr['tablename'].'.fields.'.$fieldname.'.widget.question',$widget['question']);
+
+                          }
+                          unset($widget);
 						$this->_transient_fields[$fieldname] = $curr;
 					}
 				}
@@ -1950,6 +1960,11 @@ class Dataface_Table {
 		$widget['description'] = '';
 		$widget['label_i18n'] = $tablename.'.'.$fieldname.'.label';
 		$widget['description_i18n'] = $tablename.'.'.$fieldname.'.description';
+
+		// Now we do the translation stuff
+           $widget['label'] = df_translate('tables.'.$tablename.'.fields.'.$fieldname.'.widget.label',$widget['label']);
+           $widget['description'] = df_translate('tables.'.$tablename.'.fields.'.$fieldname.'.widget.description',$widget['description']);
+
 		$widget['macro'] = '';
 		$widget['helper_css'] = '';
 		$widget['helper_js'] = '';
@@ -2028,8 +2043,11 @@ class Dataface_Table {
 				$fieldnames = array_keys($this->_fields);
 				foreach ($fieldnames as $fieldname){
 					$field =& $this->_fields[$fieldname];
-					if ( $bestCandidate === null and $this->isChar($fieldname) ){
-						$bestCandidate = '`'.$fieldname.'`';
+					if ( $bestCandidate === null and $this->isChar($fieldname)){
+					    $widgetType = $field['widget']['type'];
+					    if ($widgetType != 'radio' && $widgetType != 'checkbox') {
+					            $bestCandidate = '`'.$fieldname.'`';
+					    }
 					}
 					//if ( strpos(strtolower($fieldname),'title') !== false ){
 					//	$bestCandidate = $fieldname;

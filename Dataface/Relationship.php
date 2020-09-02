@@ -419,7 +419,9 @@ class Dataface_Relationship {
 		}
 	
 	}
-	
+
+
+
 	/**
 	 * Scans the columns of a relationship and resolves wildcards and unqualified 
 	 * column names into fully qualified column names.
@@ -547,6 +549,33 @@ class Dataface_Relationship {
 		return $this->_name;
 	}
 	
+
+
+	private function findDuplicateColumns($tableNames) {
+  	    $out = array();
+    	    $colTable = array();
+    	    foreach ($tableNames as $t) {
+      	        $tt = Dataface_Table::loadTable($t);
+	        foreach (array_keys($tt->fields()) as $f) {
+  	            if (isset($out[$f])) $out[$f]++;
+   	            else $out[$f] = 1;
+   	            if (!isset($colTable[$f])) {
+      	                $colTable[$f] = $t;
+	            }
+    	        }
+	    }
+
+    	    $out2 = array();
+   	    foreach ($out as $key=>$num) {
+      	        if ($num > 1) {
+  	            $out2[$key] = $colTable[$key];
+    	        }
+	    }
+
+    	    return $out2;
+    	}
+
+
 	/**
 	 *
 	 * Returns the SQL query that can be used to obtain the related records of this 
@@ -636,7 +665,8 @@ class Dataface_Relationship {
 				}
 				$done = array();
 				$dups = array();
-				foreach ( $this->fields(true)  as $colname){
+				//print_r($this->fields(true));
+  			        foreach ( $this->fields(true)  as $colname){
 					// We go through each column in the query and add meta columns for length.
 					
 					//$table =& Dataface_Table::getTableTableForField($colname);
@@ -711,10 +741,17 @@ class Dataface_Relationship {
 				
 				if ( $where !== 0 ){
 					$whereClause = $where;
+					$dupCols = $this->findDuplicateColumns(array_keys($tableAliases));
 					// Avoid ambiguous column error.  Any duplicate columns need to be specified.
+					foreach ( $dupCols as $dcolname=>$dtablename ){
+  					    $talias = @$tableAliases[$dtablename] ? $tableAliases[$dtablename] : $dtablename;
+    						$whereClause = preg_replace('/([^.]|^) *`'.preg_quote($dcolname).'`/','$1 `'.$talias.'`.`'.$dcolname.'`', $whereClause);
+					}
 					foreach ( $dups as $dcolname=>$dtablename ){
 						$whereClause = preg_replace('/([^.]|^) *`'.preg_quote($dcolname).'`/','$1 `'.$dtablename.'`.`'.$dcolname.'`', $whereClause);
 					}
+					//print_r($dupCols);
+					//echo $whereClause;exit;
 					$wrapper->addWhereClause($whereClause);
 				} 
 				if ( $sort !==0){
@@ -930,7 +967,26 @@ class Dataface_Relationship {
 		
 		return $this->_destinationTables;
 	}
-	
+
+
+	function hasUniqueFields($tablename) {
+  	    $destinationTables = $this->getDestinationTables();
+    	    $tnames = array();
+    	    foreach ($destinationTables as $t) {
+      	        $tnames[] = $t->tablename;
+	    }
+    	    $tnames[] = $this->_sourceTable->tablename;
+    	    $dups = $this->findDuplicateColumns($tnames);
+    	    $table = Dataface_Table::loadTable($tablename);
+          foreach (array_keys($table->fields(false, true)) as $fld) {
+                if (!isset($dups[$fld])) {
+                    return true;
+                }
+          }
+          return false;
+
+	}
+
 	/**
 	 * Returns reference to table that contains the given field.
 	 * @param string $field The name of the field.

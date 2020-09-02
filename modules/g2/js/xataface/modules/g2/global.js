@@ -225,9 +225,15 @@
 						
 						})
 						.slideDown('fast', function(){
-							$('body').bind('click.xf-dropdown', function(){
-								$(atag).trigger('click');
-							});
+  							$('body, .xf-dropdown a.trigger').bind('click.xf-dropdown', function(){
+  							    $('body, .xf-dropdown a.trigger').unbind('click.xf-dropdown');
+    							    if (this === atag) {
+      							        return;
+							    }
+    							    if ($(atag).hasClass('menu-visible')) {
+      								    $(atag).trigger('click');
+    								}
+    							});
 						
 						}).show(); //Drop down the subnav on click
 					
@@ -266,7 +272,45 @@
 				}
 			})
 			.click(function(){
-				XataJax.actions.handleSelectedAction(this, '.resultList');
+  			    try {
+    				    XataJax.actions.handleSelectedAction(this, '.resultList');
+    				} catch (e) {
+  				    console.log(e);
+    				}
+   				return false;
+			}
+		);
+		$('.selected-or-full-set-action a')
+  			.click(function(){
+  			    try {
+      			        var emptyMessage = "No rows currently selected.  Would you like to perform this action on the full found set?";
+			        var emptyMessageAtt = $(this).parents('.selected-or-full-set-action').attr('data-xf-use-full-set-if-empty')
+  			        if (emptyMessageAtt) {
+  			            emptyMessage = emptyMessageAtt;
+    			        }
+			        $(this).attr('data-xf-use-full-set-if-empty', emptyMessage);
+
+				    XataJax.actions.handleSelectedAction(this, '.resultList');
+    				} catch (e) {
+  				    console.log(e);
+    				}
+    				return false;
+			}
+		);
+		$('.full-set-action a')
+  			.click(function(){
+  			    try {
+      			        var warningMessage = "This action will operate on the full found set.  Do you wish to continue?";
+			        var warningMessageAtt = $(this).parents('.full-set-action').attr('data-xf-full-set-warning')
+  			        if (warningMessageAtt) {
+  			            warningMessage = warningMessageAtt;
+    			        }
+			        if (confirm(warningMessage)) {
+  			            return true;
+    			        }
+				} catch (e) {
+  				    console.log(e);
+    				}
 				return false;
 			}
 		);
@@ -513,7 +557,6 @@
 			})
 			.css('cursor', 'pointer')
 			;
-			
 		
 		});
 		
@@ -530,9 +573,6 @@
 				});
 			});
 		})();
-		
-		
-	
 
 
 		// Handle navigation storage.
@@ -580,8 +620,6 @@
 					$('.tableQuicklinks').append(item);
 				}
 				
-				
-				
 				var currRecord = $('meta#xf-meta-record-title').attr('content');
 				var currRecordUrl = window.location.href;
 				var recordSelected = false;
@@ -595,7 +633,6 @@
 					sessionStorage['xf-currRecord-'+currTable+'-url'] = currRecordUrl;
 					
 				}
-				
 				
 				// Record the parent record when clicking on related links.  This is used
 				// by the navigator
@@ -618,13 +655,7 @@
 					
 					})();
 					
-					
-					
-					
 				}
-				
-				
-				
 				
 				if ( currRecord ){
 					var isChildRecord = false;
@@ -692,32 +723,11 @@
 					$(this).unbind('click', handleHideAdvancedFind);
 					$(this).bind('click', handleShowAdvancedFind);
 				}
-				
+
 				$('a.xf-show-advanced-find').bind('click', handleShowAdvancedFind);
-				
-				
-				
-				
 				
 			}
 		})();
-		
-		
-		
-		
-		
 	
-				
-			
-			
-		
-		
-		
 	});
-	
-	
-	
-	
-	
-	
 })();
