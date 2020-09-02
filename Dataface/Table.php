@@ -515,7 +515,7 @@ class Dataface_Table {
 	public function shouldCountRows() {
 	    return !@$this->_atts['disable_row_counts'];
 	}
-
+	
 	/**
 	 * @brief Constructor. Please use Dataface_Table::loadTable() instead.
 	 * @param string $tablename The name of the table to load.
@@ -523,7 +523,7 @@ class Dataface_Table {
 	 * 
 	 * @private
 	 */
-	function Dataface_Table($tablename, $db=null, $quiet=false){
+	function __construct($tablename, $db=null, $quiet=false){
 		if ( !$tablename || !is_string($tablename) ){
 			throw new Exception("Invalid tablename specified: $tablename", E_USER_ERROR);
 		}
@@ -695,9 +695,9 @@ class Dataface_Table {
 				} else if ( substr($this->_fields[$key]['Type'], 0,4) == 'enum' ){
 					$this->_fields[$key]['widget']['type'] = 'select';
 				} else if (substr($this->_fields[$key]['Type'], 0, 3) == 'set') {
-  				    $this->_fields[$key]['widget']['type'] = 'checkbox';
-    				    $this->_fields[$key]['repeat'] = true;
-    				    $this->_fields[$key]['separator'] = ',';
+				    $this->_fields[$key]['widget']['type'] = 'checkbox';
+				    $this->_fields[$key]['repeat'] = true;
+				    $this->_fields[$key]['separator'] = ',';
 				}
 			}
 			if ( DATAFACE_EXTENSION_LOADED_APC ){
@@ -744,7 +744,7 @@ class Dataface_Table {
 			// handle case where this is an enumerated field
 			$matches = array();
 			if ( preg_match('/^(enum|set)\(([^\)]+)\)$/', $row['Type'], $matches )){
-		$valuelists =& $this->valuelists();
+                $valuelists =& $this->valuelists();
 				$options = explode(',', $matches[2]);
 				
 				$vocab = array();
@@ -834,6 +834,7 @@ class Dataface_Table {
 		
 		
 	}
+		function Dataface_Table($tablename, $db=null, $quiet=false) { self::__construct($tablename, $db, $quiet); }
 	
 	/**
 	 * @brief To be called after initialization.
@@ -1657,13 +1658,13 @@ class Dataface_Table {
 						$curr = array_merge_recursive_unique($schema, $curr);
 						$widget =& $curr['widget'];
 						// Now we do the translation stuff
-                          $widget['label'] = df_translate('tables.'.$curr['tablename'].'.fields.'.$fieldname.'.widget.label',$widget['label']);
-                          $widget['description'] = df_translate('tables.'.$curr['tablename'].'.fields.'.$fieldname.'.widget.description',$widget['description']);
-                          if ( isset($widget['question']) ){
-			    $widget['question'] = df_translate('tables.'.$curr['tablename'].'.fields.'.$fieldname.'.widget.question',$widget['question']);
-
-                          }
-                          unset($widget);
+                        $widget['label'] = df_translate('tables.'.$curr['tablename'].'.fields.'.$fieldname.'.widget.label',$widget['label']);
+                        $widget['description'] = df_translate('tables.'.$curr['tablename'].'.fields.'.$fieldname.'.widget.description',$widget['description']);
+                        if ( isset($widget['question']) ){
+                            $widget['question'] = df_translate('tables.'.$curr['tablename'].'.fields.'.$fieldname.'.widget.question',$widget['question']);
+                        
+                        }
+                        unset($widget);
 						$this->_transient_fields[$fieldname] = $curr;
 					}
 				}
@@ -1960,11 +1961,11 @@ class Dataface_Table {
 		$widget['description'] = '';
 		$widget['label_i18n'] = $tablename.'.'.$fieldname.'.label';
 		$widget['description_i18n'] = $tablename.'.'.$fieldname.'.description';
-
+		
 		// Now we do the translation stuff
-           $widget['label'] = df_translate('tables.'.$tablename.'.fields.'.$fieldname.'.widget.label',$widget['label']);
-           $widget['description'] = df_translate('tables.'.$tablename.'.fields.'.$fieldname.'.widget.description',$widget['description']);
-
+        $widget['label'] = df_translate('tables.'.$tablename.'.fields.'.$fieldname.'.widget.label',$widget['label']);
+        $widget['description'] = df_translate('tables.'.$tablename.'.fields.'.$fieldname.'.widget.description',$widget['description']);
+		
 		$widget['macro'] = '';
 		$widget['helper_css'] = '';
 		$widget['helper_js'] = '';
@@ -2046,8 +2047,8 @@ class Dataface_Table {
 					if ( $bestCandidate === null and $this->isChar($fieldname)){
 					    $widgetType = $field['widget']['type'];
 					    if ($widgetType != 'radio' && $widgetType != 'checkbox') {
-					            $bestCandidate = '`'.$fieldname.'`';
-					    }
+						    $bestCandidate = '`'.$fieldname.'`';
+						}
 					}
 					//if ( strpos(strtolower($fieldname),'title') !== false ){
 					//	$bestCandidate = $fieldname;
@@ -2263,9 +2264,9 @@ class Dataface_Table {
 			}
 			//$conf[$key] = array_merge_recursive_unique($this->_global_field_properties, $conf[$key]);
 		}
-
+		
 		$selectors = array();
-
+		
 		foreach ($conf as $key=>$value ){
 			if ( $key == '__sql__' and !is_array($value) ){
 				$this->_sql = $value;
@@ -2277,16 +2278,16 @@ class Dataface_Table {
 			    $selectors[$key] = $value;
 			    foreach ($this->_fields as $fkey=>$fval) {
 			        if (isset($fval['Type']) and $key === 'Type='.$fval['Type']) {
-				    $selParsed = array();
-				    $this->_parseINISection($value, $selParsed);
-				    $this->_fields[$fkey] = array_merge_recursive_unique($this->_fields[$fkey], $selParsed);
-				}
+			            $selParsed = array();
+			            $this->_parseINISection($value, $selParsed);
+			            $this->_fields[$fkey] = array_merge_recursive_unique($this->_fields[$fkey], $selParsed);
+			        }
 			    }
 
 			    continue;
 			}
-
-
+			
+			
 			if ( is_array($value) and @$value['decorator'] ){
 				$event = new StdClass;
 				$event->key = $key;
@@ -2514,7 +2515,7 @@ class Dataface_Table {
 		foreach (array_keys($this->_fields) as $key){
 		    if (isset($field)) unset($field);
 		    $field =&  $this->_fields[$key];
-
+		    
 			if ( isset($this->_fields[$key]['group'])  ){
 				$grpname = $this->_fields[$key]['group'];
 				if ( !isset( $this->_fieldgroups[$grpname] ) ){
@@ -2580,8 +2581,8 @@ class Dataface_Table {
 						} else if (stripos($field['Type'], 'VARCHAR(') === 0) {
 						    $parts = preg_split('/[()]/', $field['Type']);
 						    $fieldSize = $parts[1];
-			      $widget['atts']['size'] = min(intval($fieldSize), 60);
-			      $widget['atts']['maxlength'] = $fieldSize;
+                            $widget['atts']['size'] = min(intval($fieldSize), 60);
+                            $widget['atts']['maxlength'] = $fieldSize;
 						} else {
 							$widget['atts']['size'] = 30;
 						}
@@ -4434,44 +4435,44 @@ class Dataface_Table {
 	 *
 	 * Methods for working with import filters and importing records.
 	 */
-
+	
 	static $knownImportFilters = null;
-
+	 
 	/**
 	 * Checks to see if this table has any import filters defined.  This uses caching
 	 * to try to minimize the amount of work to calculate this because this is called
 	 * every request by the import action to determine whether it should be shown
 	 * in the UI.
-	 */
+	 */ 
 	function hasImportFilters() {
 	    if (!isset(self::$knownImportFilters)) {
-	      self::$knownImportFilters = array();
-	      if (DATAFACE_EXTENSION_LOADED_APC) {
-		  self::$knownImportFilters = apc_fetch(DATAFACE_SITE_PATH.'/import_filters');
-		  if (!isset(self::$knownImportFilters) or !@self::$knownImportFilters['.mtime'] or ($this->_hasDelegateFile() and self::$knownImportFilters['.mtime'] < filemtime($this->_delegateFilePath()))) {
-		      self::$knownImportFilters = array('.mtime' => time());
-		      apc_store(DATAFACE_SITE_PATH.'/import_filters', self::$knownImportFilters);
-		  }
-	      } else if (@$_SESSION and @$_SESSION['import_filters']) {
-		  self::$knownImportFilters = $_SESSION['import_filters'];//, self::$knownImportFilters;
-		  if (!isset(self::$knownImportFilters) or is_string(self::$knownImportFilters) or !@self::$knownImportFilters['.mtime'] or ($this->_hasDelegateFile() and self::$knownImportFilters['.mtime'] < filemtime($this->_delegateFilePath()))) {
-		      //  Only persist this for up to 10 minutes in case the dev
-		      // makes changes.
-		      self::$knownImportFilters = array('.mtime' => time());
-                      $_SESSION['import_filters'] = self::$knownImportFilters;
-		  }
-	      }
-	    }
-	    if (!isset(self::$knownImportFilters[$this->_tablename])) {
-	        $filters = $this->getImportFilters();
-                self::$knownImportFilters[$this->_tablename] = count($filters)>0;
-	        if (DATAFACE_EXTENSION_LOADED_APC) {
-		    apc_store(DATAFACE_SITE_PATH.'/import_filters', self::$knownImportFilters);
-	        } else if (@$_SESSION) {
+            self::$knownImportFilters = array();
+            if (DATAFACE_EXTENSION_LOADED_APC) {
+                self::$knownImportFilters = apc_fetch(DATAFACE_SITE_PATH.'/import_filters');
+                if (!isset(self::$knownImportFilters) or !@self::$knownImportFilters['.mtime'] or ($this->_hasDelegateFile() and self::$knownImportFilters['.mtime'] < filemtime($this->_delegateFilePath()))) {
+                    self::$knownImportFilters = array('.mtime' => time());
+                    apc_store(DATAFACE_SITE_PATH.'/import_filters', self::$knownImportFilters);
+                }
+            } else if (@$_SESSION and @$_SESSION['import_filters']) {
+                self::$knownImportFilters = $_SESSION['import_filters'];//, self::$knownImportFilters;
+                if (!isset(self::$knownImportFilters) or is_string(self::$knownImportFilters) or !@self::$knownImportFilters['.mtime'] or ($this->_hasDelegateFile() and self::$knownImportFilters['.mtime'] < filemtime($this->_delegateFilePath()))) {
+                    //  Only persist this for up to 10 minutes in case the dev
+                    // makes changes.
+                    self::$knownImportFilters = array('.mtime' => time());
                     $_SESSION['import_filters'] = self::$knownImportFilters;
-		}
-	    }
-	    return self::$knownImportFilters[$this->_tablename];
+                }
+            } 
+        }
+        if (!isset(self::$knownImportFilters[$this->_tablename])) {
+            $filters = $this->getImportFilters();
+            self::$knownImportFilters[$this->_tablename] = count($filters)>0;
+            if (DATAFACE_EXTENSION_LOADED_APC) {
+                apc_store(DATAFACE_SITE_PATH.'/import_filters', self::$knownImportFilters);
+            } else if (@$_SESSION) {
+                $_SESSION['import_filters'] = self::$knownImportFilters;
+            }
+        }
+        return self::$knownImportFilters[$this->_tablename];
 	}
 	 
 	/**

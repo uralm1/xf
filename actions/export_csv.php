@@ -41,8 +41,8 @@ if ( !function_exists('fputcsv') ){
 
 
 class dataface_actions_export_csv {
-	
-        private $csv_delimiter; //declare member var
+
+        private $csv_delimiter;  //declare member var
 
         function writeRow($fh, $data, $query){
             fputcsv($fh, $data, $this->csv_delimiter,'"');
@@ -70,7 +70,7 @@ class dataface_actions_export_csv {
 		set_time_limit(0);
 		import('Dataface/RecordReader.php');
 		$app =& Dataface_Application::getInstance();
-
+                
                 $this->csv_delimiter = @$app->_conf['export_csv']['delimiter'];     //get delimiter key from conf.ini
                 if (!$this->csv_delimiter || $this->csv_delimiter==''){             //if no delimiter specified
                     if ( @$app->_conf['export_csv'] and @$app->_conf['export_csv']['format'] == 'excel'){   
@@ -85,22 +85,22 @@ class dataface_actions_export_csv {
                 }elseif ($this->csv_delimiter=='"'){
                     die('Error in conf.ini: csv_delimiter cannot be set to double quote (")'); 
                 }
-
+		
 		$query = $app->getQuery();
 		// Better to set the skip and limit in the actions.ini file
 		//$query['-limit'] = 9999999;
 		$table =& Dataface_Table::loadTable($query['-table']);
 		if ( isset($query['-relationship']) and @$query['--related'] ){
 			if (!isset($query['-related:start'])) {
-  			    $query['-related:start'] = 0;
-    			} else {
-  			    $query['-related:start'] = intval($query['-related:start']);
-    			}
+			    $query['-related:start'] = 0;
+			} else {
+			    $query['-related:start'] = intval($query['-related:start']);
+			}
 			if (!isset($query['-related:limit'])) {
-  			    $query['-related:limit'] = 9999999;
-    			} else {
-  			    $query['-related:limit']  = intval($query['-related:limit']);
-    			}
+			    $query['-related:limit'] = 9999999;
+			} else {
+			    $query['-related:limit']  = intval($query['-related:limit']);
+			}
 			$record =& $app->getRecord();
 			$relationship =& $table->getRelationship($query['-relationship']);
 			
@@ -134,13 +134,13 @@ class dataface_actions_export_csv {
 				$this->writeRow($temp, $row, $query);//, $recordfputcsv($temp, $row,",",'"');
 			}
 		} else {
-			$temp = tmpfile();
-                    $query['-skip'] = 0;
+			$temp = tmpfile();       
+            $query['-skip'] = 0;
 			$query['-limit'] = null;
 			$records = df_get_selected_records($query);
 			if (!$records) {
-  			    $records = new Dataface_RecordReader($query, 30, false);
-   			}
+			    $records = new Dataface_RecordReader($query, 30, false);
+			}
 			//$records =& df_get_records_array($query['-table'], $query,null,null,false);
 			//$data = array();
 			$headings = array();
