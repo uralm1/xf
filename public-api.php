@@ -506,19 +506,19 @@ function df_display($context, $template_name){
 	    ob_start();
 	    $st->display($context, $template_name);
 	    $contents = ob_get_contents();
-
-    	    ob_end_clean();
-
-    	    if (preg_match('/<\!--ui-root='.preg_quote($query['-ui-root'], '/').'-->([\s\S]*)<\!--\/ui-root='.preg_quote($query['-ui-root'], '/').'-->/', $contents, $matches)) {
-      	        $placeholder = '__placeholder__'.time();
+	    
+	    ob_end_clean();
+	    
+	    if (preg_match('/<\!--ui-root='.preg_quote($query['-ui-root'], '/').'-->([\s\S]*)<\!--\/ui-root='.preg_quote($query['-ui-root'], '/').'-->/', $contents, $matches)) {
+	        $placeholder = '__placeholder__'.time();
 	        $contents = preg_replace('/(<body[^>]*>)[\s\S]*(<\!-- end-html-body-->)/', '$1'.$placeholder.'$2', $contents);
 	        $contents = str_replace($placeholder, $matches[1], $contents);
 	        echo $contents;
 	        return true;
 	    } else {
-                echo $contents;
-                return true;
- 	    }
+            echo $contents;
+            return true;
+	    }
 	} else {
 	    return $st->display($context, $template_name);
 	}
@@ -908,5 +908,26 @@ function df_tz_or_offset(){
                     Dataface_Application::getInstance()->_conf['oe'].'"');
             echo json_encode($data);
         }
-		
+        
+        function df_post($url, $data=array(), $json=true) {
+
+            // use key 'http' even if you send the request to https://...
+            $options = array(
+                'http' => array(
+                    'header'  => "Content-type: application/x-www-form-urlencoded\r\n",
+                    'method'  => 'POST',
+                    'content' => http_build_query($data)
+                )
+            );
+            $context  = stream_context_create($options);
+            $result = file_get_contents($url, false, $context);
+            if ($result === FALSE) {
+                throw new Exception("HTTP request failed");
+            }
+            if ($json) {
+                return json_decode($result, true);
+            }
+            return $result;
+        }
+        
 } // end if ( !defined( DATAFACE_PUBLIC_API_LOADED ) ){
