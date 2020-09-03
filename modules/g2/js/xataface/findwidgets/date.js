@@ -1,7 +1,7 @@
 //require <jquery.packed.js>
 //require <jquery-ui.min.js>
 //require <xatajax.core.js>
-//require <xatajax/lang.js>
+//require <xataface/lang.js>
 (function(){
 	var $ = jQuery;
 	var _ = xataface.lang.get;
