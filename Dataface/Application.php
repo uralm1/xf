@@ -702,6 +702,12 @@ END;
 			@xf_db_query('START TRANSACTION', $this->_db);
 
 		}
+
+		if (@$this->_conf['_database']['sql_mode']) {
+  			xf_db_query('SET sql_mode="'.addslashes($this->_conf['_database']['sql_mode']).'"', $this->_db);
+		} else {
+  			xf_db_query('SET sql_mode=""', $this->_db);
+		}
 		if ( !isset($this->_conf['default_ie']) ) $this->_conf['default_ie'] = 'UTF-8';
 		if ( !isset($this->_conf['default_oe']) ) $this->_conf['default_oe'] = 'UTF-8';
 		if ( isset( $this->_conf['multilingual_content']) || isset($this->_conf['languages']) ){
@@ -1023,7 +1029,7 @@ END;
 
 
 		if ( isset( $query['--msg'] ) ) {
-			$query['--msg'] = preg_replace('#<[^>]*>#','', $query['--msg']);
+			$query['--msg'] = htmlspecialchars($query['--msg']);
 			if ( preg_match('/^@@$/', $query['--msg']) ){
 
 				if ( @$_SESSION['--msg'] ){
@@ -1040,7 +1046,7 @@ END;
 
 
 		if ( isset($query['--error']) and trim($query['--error']) ){
-			$query['--error'] = preg_replace('#<[^>]*>#','', $query['--error']);
+			$query['--error'] = htmlspecialchars($query['--error']);
 			$this->addError(PEAR::raiseError($query['--error']));
 		}
 
