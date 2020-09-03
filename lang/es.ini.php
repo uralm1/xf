@@ -1,3 +1,4 @@
+;<?php exit;
 templates.Dataface_Fineprint.COPYRIGHT = "&copy; $year - Todos los derechos reservados"
 actions.edit.label = "Editar"
 templates.Dataface_RecordHistory.LABEL_CHANGES = "Cambios"

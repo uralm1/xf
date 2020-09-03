@@ -1,3 +1,4 @@
+;<?php exit;
 templates.Dataface_Fineprint.COPYRIGHT = "(c) $year Alle Rechte vorbehalten"
 actions.related_records_list.label = "{$query['-relationship']}"
 actions.find_list.label = "{$query['-table']}"
