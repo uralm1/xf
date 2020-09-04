@@ -6,9 +6,9 @@ VERSION_FILE=$WWW_DIR/version.txt
 [ -f "$VERSION_FILE" ] || echo "1.0 1" > $VERSION_FILE
 VERSION=`php $SCRIPTPATH/print_config_var.php "XFShortVersionString"`
 DBNAME=`php $SCRIPTPATH/print_config_var.php "_database.name"`
-DIST_FILE=$DIST_DIR/$DBNAME-$VERSION.xfpkg
-DIST_TMP=$DIST_DIR/$DBNAME-$VERSION
-echo $DIST_FILE
+DIST_NAME=$DBNAME-$VERSION
+DIST_FILE=$DIST_DIR/$DIST_NAME.xfpkg
+DIST_TMP=$DIST_DIR/$DIST_NAME
 [ -f $DIST_FILE ] && echo "$DIST_FILE already exists.  Increment version in www/version.txt file, or delete existing archive.\n" && exit 1
 rm -rf "$DIST_TMP"
 mkdir $DIST_DIR
@@ -41,3 +41,13 @@ sh $SCRIPTPATH/mysqldump.sh > $DIST_TMP/install.sql
 mkdir $DIST_TMP/www
 tar xf $DIST_TMP/www.tar -C $DIST_TMP
 rm $DIST_TMP/www.tar
+here=`pwd`
+cd $DIST_DIR
+tar cf $DIST_NAME.xfpkg $DIST_NAME
+cd $here
+rm -rf "$DIST_TMP"
+normalDir="`cd "${DIST_DIR}";pwd`"
+cd $here
+echo "Created ${normalDir}/${DIST_NAME}.xfpkg"
+echo "Install this package on any server with Xataface installed using: \n\n" \
+  "  $ php xataface/tools/install-pkg.php path/to/${DIST_NAME}.xfpkg [target dir]"

@@ -15,10 +15,10 @@ class Dataface_GlanceList {
 		}
 
 	}
-	
-        public function Dataface_GlanceList(array $records) {
-	    self::__construct($records);
-	}
+
+    public function Dataface_GlanceList(array $records) {
+        self::__construct($records);
+    }
 
 	function toHtml(){
 
@@ -33,10 +33,10 @@ class Dataface_GlanceList {
 		$del =& $record->_table->getDelegate();
 		$origRecord = $this->origRecords[$record->getId()];
 		if ( !$origRecord ) $origRecord = $record;
-	
+
 		if ( is_a($origRecord, 'Dataface_RelatedRecord') ){
 			$origDel = $origRecord->_record->table()->getDelegate();
-			$method = 'rel_'.$origRecord->_relationshipName.'__'.oneLineDescription;
+			$method = 'rel_'.$origRecord->_relationshipName.'__oneLineDescription';
 			if ( isset($origDel) and method_exists($origDel, $method) ){
 				return $del->$method($origRecord);
 			}
@@ -44,7 +44,7 @@ class Dataface_GlanceList {
 		if ( isset($del) and method_exists($del, 'oneLineDescription') ){
 			return $del->oneLineDescription($record);
 		}
-	
+
 		$app =& Dataface_Application::getInstance();
 		$adel =& $app->getDelegate();
 		if ( isset($adel) and method_exists($adel, 'oneLineDescription') ){
@@ -52,7 +52,7 @@ class Dataface_GlanceList {
 		}
 		$out = '<span class="Dataface_GlanceList-oneLineDescription">
 			<span class="Dataface_GlanceList-oneLineDescription-title"><a href="'.df_escape($record->getURL('-action=view')).'" title="View this record">'.df_escape($origRecord->getTitle()).'</a></span> ';
-		if ( $creator = $record->getCreator()  ){
+		if ( $creator = $record->getCreator() and !is_numeric($creator) ){
 			$show = true;
 			if ( isset($app->prefs['hide_posted_by']) and $app->prefs['hide_posted_by'] ) $show = false;
 			if ( isset($record->_table->_atts['__prefs__']['hide_posted_by']) and $record->_table->_atts['__prefs__']['hide_posted_by'] ) $show = false;
@@ -61,7 +61,7 @@ class Dataface_GlanceList {
 				'<span class="Dataface_GlanceList-oneLineDescription-posted-by">Posted by '.df_escape($creator).'.</span> ';
 			}
 		}
-	
+
 		if ( $modified = $record->getLastModified() ){
 			$show = true;
 			if ( isset($app->prefs['hide_updated']) and $app->prefs['hide_updated'] ) $show = false;
@@ -73,7 +73,7 @@ class Dataface_GlanceList {
 		$out .= '
 			</span>';
 		return $out;
-	
+
 
 	}
 }
