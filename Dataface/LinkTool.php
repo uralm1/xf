@@ -18,8 +18,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *-------------------------------------------------------------------------------
  */
-import( 'Dataface/Application.php');
-import( 'Dataface/Table.php');
+import(XFROOT. 'Dataface/Application.php');
+import( XFROOT.'Dataface/Table.php');
 
 
 /**
@@ -127,7 +127,7 @@ class Dataface_LinkTool {
 		if (@$appQuery['-ui-root'] and !isset($query['-ui-root'])) {
 		    $query['-ui-root'] = $appQuery['-ui-root'];
 		}
-
+		
 		if ( !isset($query['-search']) ) $query['-search'] = null;
 		if ( isset( $_REQUEST['-search'] ) and strlen($_REQUEST['-search'])>0 and $query['-search'] !== null  ){
 			$query['-search'] = $_REQUEST['-search'];

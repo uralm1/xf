@@ -25,10 +25,10 @@
  * Description:
  * 	Encapsulates query results from a table.
  ******************************************************************************/
-import( 'Dataface/QueryBuilder.php');
-import( 'Dataface/Table.php');
-import( 'Dataface/Record.php');
-import( 'Dataface/DB.php');
+import( XFROOT.'Dataface/QueryBuilder.php');
+import( XFROOT.'Dataface/Table.php');
+import( XFROOT.'Dataface/Record.php');
+import( XFROOT.'Dataface/DB.php');
 
 
 $GLOBALS['Dataface_QueryTool_limit'] = 30;
@@ -114,7 +114,7 @@ class Dataface_QueryTool {
 		}
 		
 		// Let's just do cardinality lazily... 
- 		//else  if ( isset($cache[$sql]) ) {
+		//else  if ( isset($cache[$sql]) ) {
 		//    $this->_data['cardinality'] = $cache[$sql];
 		//} else {
 		//	$res = $this->dbObj->query( $sql, $this->_db,null, true /*as array*/);

@@ -19,10 +19,10 @@
  *-------------------------------------------------------------------------------
  */
 
-import( 'Dataface/Table.php');
-import( 'Dataface/RelatedRecord.php');
-import('Dataface/LinkTool.php');
-import('Dataface/IO.php');
+import( XFROOT.'Dataface/Table.php');
+import( XFROOT.'Dataface/RelatedRecord.php');
+import(XFROOT.'Dataface/LinkTool.php');
+import(XFROOT.'Dataface/IO.php');
 
 
 /**
@@ -357,6 +357,10 @@ class Dataface_Record {
 			//$this->setValues($values);
 
 		}
+	}
+
+	function __construct($tablename, $values=null) {
+		$this->Dataface_Record($tablename, $values);
 	}
 
 	// @}
@@ -4526,7 +4530,7 @@ class Dataface_Record {
 			if ( $res and is_string($res) ) return $res;
 		}
 
-		import('Dataface/LinkTool.php');
+		import(XFROOT.'Dataface/LinkTool.php');
 		//$linkTool =& Dataface_LinkTool::getInstance();
 
 		return Dataface_LinkTool::buildLink($params ,false);
@@ -4815,7 +4819,7 @@ class Dataface_Record {
 	 * @return mixed True on success.  PEAR_Error object on fail.
 	 */
 	function delete($secure=false){
-		import('Dataface/IO.php');
+		import(XFROOT.'Dataface/IO.php');
 		$io = new Dataface_IO($this->_table->tablename);
 		return $io->delete($this, $secure);
 
@@ -4877,6 +4881,10 @@ class Dataface_RecordIterator {
 		$this->reset();
 	}
 
+	function __construct($tablename, &$records) {
+		$this->Dataface_RecordIterator($tablename, $records);
+	}
+
 	function &next(){
 		$out = new Dataface_Record($this->_tablename, $this->_records[current($this->_keys)]);
 		next($this->_keys);
@@ -4925,6 +4933,10 @@ class Dataface_RelationshipIterator{
 		} else {
 			$this->_keys = array();
 		}
+	}
+
+	function __construct(&$record, $relationshipName, $start=null, $limit=null, $where=0, $sort=0) {
+		$this->Dataface_ReltionshipIterator($record, $relationshipName, $start, $limit, $where, $sort);
 	}
 
 	function &next(){

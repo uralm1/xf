@@ -2,9 +2,9 @@
 class dataface_actions_delete {
 
 	function handle(&$params){
-		import( 'Dataface/DeleteForm.php');
-		import( 'Dataface/LanguageTool.php');
-		import( 'Dataface/Record.php');
+		import( XFROOT.'Dataface/DeleteForm.php');
+		import( XFROOT.'Dataface/LanguageTool.php');
+		import( XFROOT.'Dataface/Record.php');
 		
 		$app =& Dataface_Application::getInstance();
 		$query =& $app->getQuery();
@@ -40,16 +40,16 @@ class dataface_actions_delete {
 			if ( !isset($response['--msg']) ) $response['--msg'] = '';
 			$failed = false;
 			if ( PEAR::isError($res) && !Dataface_Error::isNotice($res) ){
-
+			
 			    $errno = xf_db_errno(df_db());
-  			    if (@$query['-response'] == 'json') {
-      			        df_write_json(array(
-  			            'code' => 500,
-    			            'message' => $errno == 1451 ?
-    			                "Failed to delete record due to a foreign key constraint" :
+			    if (@$query['-response'] == 'json') {
+			        df_write_json(array(
+			            'code' => 500,
+			            'message' => $errno == 1451 ?
+			                "Failed to delete record due to a foreign key constraint" :
 			                $res->getMessage(),
-  			            'errno' => $errno
-    			        ));
+			            'errno' => $errno
+			        ));
 			        exit;
 			    }
 				return $res;
@@ -59,7 +59,7 @@ class dataface_actions_delete {
 				$app->addError($res);
 				//$response['--msg'] = @$response['--msg'] ."\n".$res->getMessage();
 				$failed = true;
-
+				
 			} else if ( is_array($res) ){
 				$msg = df_translate(
 					'Some errors occurred while deleting records',
@@ -79,27 +79,27 @@ class dataface_actions_delete {
 			}
 			$msg = urlencode(trim($msg."\n".$response['--msg']));
 			if ( !$failed ){
-
+			
 			    if (@$query['-response'] == 'json') {
-      			        df_write_json(array(
-  			            'code' => 200,
-    			            'message' => 'Record successfully deleted'
-    			        ));
+			        df_write_json(array(
+			            'code' => 200,
+			            'message' => 'Record successfully deleted'
+			        ));
 			        exit;
 			    }
-
-				import('Dataface/Utilities.php');
+			
+				import(XFROOT.'Dataface/Utilities.php');
 				Dataface_Utilities::fireEvent('after_action_delete', array('record'=>&$record));
 				$append = '';
 				$append .= '&--master-detail-delete-row=1';
 				header('Location: '.$_SERVER['HOST_URI'].DATAFACE_SITE_HREF.'?-table='.$query['-table'].$append.'&--msg='.$msg);
 				exit;
 			} else {
-  			    if (@$query['-response'] == 'json') {
-      			        df_write_json(array(
-  			            'code' => 500,
-    			            'message' => urldecode($msg)
-    			        ));
+			    if (@$query['-response'] == 'json') {
+			        df_write_json(array(
+			            'code' => 500,
+			            'message' => urldecode($msg)
+			        ));
 			        exit;
 			    }
 			}

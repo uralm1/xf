@@ -47,6 +47,10 @@ class Dataface_ConfigTool {
 		$this->userConfig = new StdClass;
 	}
 	
+	function __construct() {
+	    $this->Dataface_ConfigTool();
+	}
+
 	/**
 	 * Array to lookup the name of an entity based on its ID.
 	 */
@@ -543,17 +547,17 @@ class Dataface_ConfigTool {
 	
 	
 	function createConfigTable(){
-		import('Dataface/ConfigTool/createConfigTable.function.php');
+		import(XFROOT.'Dataface/ConfigTool/createConfigTable.function.php');
 		return Dataface_ConfigTool_createConfigTable();
 	}
 	
 	function setConfigParam($file, $section, $key, $value, $username=null, $lang=null, $priority=5){
-		import('Dataface/ConfigTool/setConfigParam.function.php');
+		import(XFROOT.'Dataface/ConfigTool/setConfigParam.function.php');
 		return Dataface_ConfigTool_setConfigParam($file, $section, $key, $value, $username, $lang, $priority);
 	}
 	
 	function clearConfigParam($file, $section, $key, $value, $username=null, $lang=null){
-		import('Dataface/ConfigTool/clearConfigParam.function.php');
+		import(XFROOT.'Dataface/ConfigTool/clearConfigParam.function.php');
 		return Dataface_ConfigTool_setConfigParam($file, $section, $key, $value, $username, $lang);
 	}
 

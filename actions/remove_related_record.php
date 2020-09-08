@@ -10,7 +10,7 @@
  */
 class dataface_actions_remove_related_record {
 	function handle(&$params){
-		import( 'Dataface/RemoveRelatedRecordForm.php');
+		import( XFROOT.'Dataface/RemoveRelatedRecordForm.php');
 		$app =& Dataface_Application::getInstance();
 		$query =& $app->getQuery();
 		
@@ -88,12 +88,12 @@ class dataface_actions_remove_related_record {
 			
 			$msg = urlencode(trim(strip_tags(@$response['--msg'])));
 			if (@$_SESSION) {
-  			    $_SESSION['--msg'] = $response['--msg'];
-    			    $msg = '';
-   			} else {
- 			    $msg = '&--msg='.$msg;
-   			}
-
+			    $_SESSION['--msg'] = $response['--msg'];
+			    $msg = '';
+			} else {
+			    $msg = '&--msg='.$msg;
+			}
+			
 			$app->redirect($form->_record->getURL(array('-action'=>'related_records_list', '-relationship'=>$query['-relationship']) ).$msg);
 			//header("Location: ".$_SERVER['HOST_URI'].$_SERVER['PHP_SELF'].'?'.$_COOKIE['dataface_lastpage'].'&--msg='.$msg);
 			

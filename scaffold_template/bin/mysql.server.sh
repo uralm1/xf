@@ -50,33 +50,35 @@ datadir="$scaffolddir"/data
 # Value here is overridden by value in my.cnf.
 # 0 means don't wait at all
 # Negative numbers mean to wait indefinitely
-service_startup_timeout=900
+service_startup_timeout=30
 
-# Lock directory for RedHat / SuSE.
-lockdir='/var/lock/subsys'
-lock_file_path="$lockdir/mysql"
+
+lock_file_path="$scaffolddir/tmp/mysql"
 
 # The following variables are only set for letting mysql.server find things.
 
 # Set some defaults
 mysqld_pid_file_path=
-if test -z "$basedir"
+if test -f "/Applications/XAMPP/xamppfiles"
 then
   basedir=/Applications/XAMPP/xamppfiles
   bindir=/Applications/XAMPP/xamppfiles/bin
-  if test -z "$datadir"
-  then
-    datadir=/Applications/XAMPP/xamppfiles/var/mysql
-  fi
+  #if test -z "$datadir"
+  #then
+    #datadir=/Applications/XAMPP/xamppfiles/var/mysql
+  #fi
   sbindir=/Applications/XAMPP/xamppfiles/sbin
   libexecdir=/Applications/XAMPP/xamppfiles/sbin
 else
-  bindir="$basedir/bin"
-  if test -z "$datadir"
-  then
-    datadir="$basedir/data"
-  fi
-  sbindir="$basedir/sbin"
+    MYSQL_PATH=`which mysql`
+    if [ -z "$MYSQL_PATH" ]
+    then
+        echo "Cannot find mysql"
+        exit 1
+    fi
+    bindir=$(dirname "$MYSQL_PATH")
+    basedir=$(dirname "$bindir")
+    sbindir="$basedir/sbin"
   if test -f "$basedir/bin/mysqld"
   then
     libexecdir="$basedir/bin"
@@ -87,29 +89,18 @@ fi
 
 # datadir_set is used to determine if datadir was set (and so should be
 # *not* set inside of the --basedir= handler.)
-datadir_set=
+datadir_set=1
 
-#
-# Use LSB init script functions for printing messages, if possible
-#
-lsb_functions="/lib/lsb/init-functions"
-if test -f $lsb_functions ; then
-  . $lsb_functions
-else
-  # Include non-LSB RedHat init functions to make systemctl redirect work
-  init_functions="/etc/init.d/functions"
-  if test -f $init_functions; then
-    . $init_functions
-  fi
-  log_success_msg()
-  {
-    echo " SUCCESS! $@"
-  }
-  log_failure_msg()
-  {
-    echo " ERROR! $@"
-  }
-fi
+
+log_success_msg()
+{
+echo " SUCCESS! $@"
+}
+log_failure_msg()
+{
+echo " ERROR! $@"
+}
+
 
 PATH="/sbin:/usr/sbin:/bin:/usr/bin:$basedir/bin"
 export PATH
@@ -124,63 +115,6 @@ case `echo "testing\c"`,`echo -n testing` in
     *)       echo_n=   echo_c='\c' ;;
 esac
 
-parse_server_arguments() {
-  for arg do
-    val=`echo "$arg" | sed -e 's/^[^=]*=//'`
-    case "$arg" in
-      --basedir=*)  basedir="$val"
-                    bindir="$basedir/bin"
-		    if test -z "$datadir_set"; then
-		      datadir="$basedir/data"
-		    fi
-		    sbindir="$basedir/sbin"
-                    if test -f "$basedir/bin/mysqld"
-                    then
-                      libexecdir="$basedir/bin"
-                    else
-                      libexecdir="$basedir/libexec"
-                    fi
-		    libexecdir="$basedir/libexec"
-        ;;
-      --datadir=*)  datadir="$val"
-		    datadir_set=1
-	;;
-      --log-basename=*|--hostname=*|--loose-log-basename=*)
-        mysqld_pid_file_path="$val.pid"
-	;;
-      --pid-file=*) mysqld_pid_file_path="$val" ;;
-      --service-startup-timeout=*) service_startup_timeout="$val" ;;
-      --user=*) user="$USER"; ;;
-    esac
-  done
-}
-
-# Get arguments from the my.cnf file,
-# the only group, which is read from now on is [mysqld]
-if test -x "$bindir/my_print_defaults";  then
-  print_defaults="$bindir/my_print_defaults"
-else
-  # Try to find basedir in /etc/my.cnf
-  conf=/etc/my.cnf
-  print_defaults=
-  if test -r $conf
-  then
-    subpat='^[^=]*basedir[^=]*=\(.*\)$'
-    dirs=`sed -e "/$subpat/!d" -e 's//\1/' $conf`
-    for d in $dirs
-    do
-      d=`echo $d | sed -e 's/[ 	]//g'`
-      if test -x "$d/bin/my_print_defaults"
-      then
-        print_defaults="$d/bin/my_print_defaults"
-        break
-      fi
-    done
-  fi
-
-  # Hope it's in the PATH ... but I doubt it
-  test -z "$print_defaults" && print_defaults="my_print_defaults"
-fi
 
 user=$USER
 
@@ -208,8 +142,6 @@ else
   fi
 fi
 
-parse_server_arguments `$print_defaults $extra_args --mysqld mysql.server`
-parse_server_arguments "$@"
 
 # wait for the pid file to disappear
 wait_for_gone () {
@@ -257,11 +189,13 @@ wait_for_ready () {
 
   i=0
   while test $i -ne $service_startup_timeout ; do
-
+    echo "Waiting for ready"
     if $bindir/mysqladmin --socket="$scaffolddir/tmp/mysql.sock" ping >/dev/null 2>&1; then
+        echo "We are ready"
       log_success_msg
       return 0
     elif kill -0 $! ; then
+        echo "kill -0 says wait some more..."
       :  # mysqld_safe is still running
     else
       # mysqld_safe is no longer running, abort the wait loop
@@ -280,15 +214,7 @@ wait_for_ready () {
 #
 # Set pid file if not given
 #
-if test -z "$mysqld_pid_file_path"
-then
-  mysqld_pid_file_path=$datadir/`hostname`.pid
-else
-  case "$mysqld_pid_file_path" in
-    /* ) ;;
-    * )  mysqld_pid_file_path="$datadir/$mysqld_pid_file_path" ;;
-  esac
-fi
+mysqld_pid_file_path=$datadir/`hostname`.pid
 
 # source other config files
 [ -f /etc/default/mysql ] && . /etc/default/mysql
@@ -307,16 +233,13 @@ case "$mode" in
     then
       # Give extra arguments to mysqld with the my.cnf file. This script
       # may be overwritten at next upgrade.
-      $bindir/mysqld_safe --skip-grant-tables --skip-networking --tmpdir="$scaffolddir/tmp" --datadir="$scaffolddir/data" --innodb_data_home_dir="$scaffolddir/data" --innodb_log_group_home_dir="$scaffolddir/data" --log-error="$scaffolddir/log/mysql-errors.log" --socket="$scaffolddir/tmp/mysql.sock" --user=`whoami` --pid-file="$mysqld_pid_file_path" "$@" &
+      echo "PID FILE $mysqld_pid_file_path\n"
+      $bindir/mysqld_safe --skip-grant-tables --skip-networking --tmpdir="$scaffolddir/tmp" --datadir="$scaffolddir/data" --innodb_data_home_dir="$scaffolddir/data" --innodb_log_group_home_dir="$scaffolddir/data" --log-error="$scaffolddir/log/mysql-errors.log" --socket="$scaffolddir/tmp/mysql.sock" --user=`whoami` --pid-file="$mysqld_pid_file_path" "$@" >/dev/null &
       #$bindir/mysqld_safe --datadir="$datadir" --pid-file="$mysqld_pid_file_path" "$@" &
       wait_for_ready; return_value=$?
-
-      # Make lock for RedHat / SuSE
-      if test -w "$lockdir"
-      then
-        touch "$lock_file_path"
-      fi
-
+      echo "About to touch lock file $lock_file_path"
+      touch "$lock_file_path"
+      echo "Exiting with return value $return_value"
       exit $return_value
     else
       log_failure_msg "Couldn't find MariaDB server ($bindir/mysqld_safe)"
