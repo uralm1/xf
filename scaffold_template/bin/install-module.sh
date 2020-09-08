@@ -5,10 +5,10 @@ TABLES_DIR=$SCRIPTPATH/../app/tables
 
 status=`bash $SCRIPTPATH/mysql.server.sh status`
 if [[ $status == *"ERROR!"* ]]; then
-    $SCRIPTPATH/mysql.server.sh start || (echo "Failed to start mysql" && exit 1)
+    sh $SCRIPTPATH/mysql.server.sh start || (echo "Failed to start mysql" && exit 1)
     function finish() {
-        $SCRIPTPATH/mysql.server stop
+        sh $SCRIPTPATH/mysql.server.sh stop
     }
     trap finish EXIT
 fi
-bash $SCRIPTPATH/php.sh $SCRIPTPATH/inc/create-app-delegate.php "$@"
+bash $SCRIPTPATH/php.sh $SCRIPTPATH/inc/install-module.php "$@"
