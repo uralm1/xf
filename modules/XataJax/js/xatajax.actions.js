@@ -113,7 +113,7 @@
 			if ( typeof(emptyCallback) == 'function' ){
 				emptyCallback(params, container);
 			} else {
-				alert('No records are currently selected.  Please first select the records that you wish to act upon.');
+				alert('Не выбрано ни одной записи!');
 			}
 			
 			return;
