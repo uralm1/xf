@@ -36,10 +36,14 @@
 # one is reported.  Run "apachectl help" for usage info
 #
 SCRIPTPATH="$( cd "$(dirname "$0")" ; pwd -P )"
+if test -z ${XATAFACE}; then
+	XATAFACE=$HOME/xataface
+fi
+export XFServiceScript=$XATAFACE/tools/service.php
 export XFServerRoot=`php $SCRIPTPATH/print_config_var.php XFServerRoot`
 export XFServerPort=`php $SCRIPTPATH/print_config_var.php XFServerPort`
 export MysqlDefaultSocket="$SCRIPTPATH/../tmp/mysql.sock"
-echo "Starting apache on port $XFServerPort\n"
+#echo "Starting apache on port $XFServerPort\n"
 ACMD="$1"
 ARGV="$@"
 #
@@ -47,21 +51,24 @@ ARGV="$@"
 # --------------------                              --------------------
 # 
 # the path to your httpd binary, including options if necessary
-HTTPD='/Applications/XAMPP/xamppfiles/bin/httpd'
+HTTPD=`php $SCRIPTPATH/inc/find_httpd.php`
+export XFApacheServerRoot=`php $SCRIPTPATH/inc/find_httpd.php ServerRoot`
+if test -f "$HTTPD"; then
+    FOUND=1
+else
+    echo "Cannot find $HTTPD"
+    exit 1
+fi
 #
 # pick up any necessary environment variables
 if test -f /Applications/XAMPP/xamppfiles/bin/envvars; then
   . /Applications/XAMPP/xamppfiles/bin/envvars
 fi
-#
-# a command that outputs a formatted text version of the HTML at the
-# url given on the command line.  Designed for lynx, however other
-# programs may work.  
-LYNX="lynx -dump"
+
 #
 # the URL to your server's mod_status status page.  If you do not
 # have one, then status and fullstatus will not work.
-STATUSURL="http://localhost:80/server-status"
+STATUSURL="http://localhost:$XFServerPort/server-status?auto"
 #
 # Set this variable to a command that increases the maximum
 # number of file descriptors allowed per child process. This is
@@ -81,23 +88,39 @@ if [ "x$ARGV" = "x" ] ; then
     ARGV="-h"
 fi
 
+# Add this instance to Xataface's services list so that
+# we can more easily monitor all of the Xataface projects
+# that are running
+if test -f "$XFServiceScript"; then
+	php "$XFServiceScript" add "$SCRIPTPATH/.."
+fi
+
 case $ACMD in
 start|stop|restart|graceful|graceful-stop)
-    $HTTPD -k $ARGV -f "$SCRIPTPATH"/../etc/httpd.conf
-    ERROR=$?
-    ;;
-startssl|sslstart|start-SSL)
-    echo The startssl option is no longer supported.
-    echo Please edit httpd.conf to include the SSL configuration settings
-    echo and then use "apachectl start".
-    ERROR=2
-    ;;
-configtest)
-    $HTTPD -t
+    $HTTPD -k $ARGV -f "$SCRIPTPATH"/../etc/httpd.conf -c"PidFile  $SCRIPTPATH/../tmp/httpd.pid"
     ERROR=$?
     ;;
 status)
-    $LYNX $STATUSURL | awk ' /process$/ { print; exit } { print } '
+	if [ ! -f "$SCRIPTPATH/../tmp/httpd.pid" ]; then
+		echo "STOPPED"
+		exit 1
+	fi
+	pid=$(cat "$SCRIPTPATH/../tmp/httpd.pid")
+	if [ -z "$pid" ]; then
+		echo "STOPPED"
+		exit 1
+	fi
+	if [ ! `kill -0 $pid` ]; then
+		echo "RUNNING"
+		HTTP_STATUS=$(php $SCRIPTPATH/inc/http-response-code.php $STATUSURL)
+		if [ "$HTTP_STATUS" = "200" ]; then
+			$HTTPD -S -f "$SCRIPTPATH"/../etc/httpd.conf
+			curl -s $STATUSURL
+		fi
+		exit 0
+	fi
+	echo "STOPPED"
+	exit 1
     ;;
 fullstatus)
     $LYNX $STATUSURL
