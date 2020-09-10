@@ -4787,7 +4787,7 @@ class Dataface_Table {
 			 * that works.
 			 */
 			foreach (array_keys($filters) as $filtername){
-				$parsed =& $filters[$filtername]->import($data, $defaultValues);
+				$parsed = $filters[$filtername]->import($data, $defaultValues);
 				if ( PEAR::isError($parsed) ){
 					/*
 					 * This filter encountered an error.
@@ -5415,7 +5415,7 @@ class Dataface_Table {
 				$replacement = $this->normalize($matches[1], $values[$matches[1]]);
 
 			} else {
-				$replacement = '\$0';
+				$replacement = '';
 			}
 			$str = preg_replace( '/(?<!\\\)\$'.$matches[1].'/', $replacement, $str);
 			$blackString = preg_replace( '/(?<!\\\)\$'.$matches[1].'/', "", $blackString);
