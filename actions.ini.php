@@ -66,6 +66,7 @@
 ;; Create a new record
 [new]
 	label = New Record
+	breadcrumb_label="New"
 	description = Create a new record
 	url = "{$this->url('-action=new', false)}"
 	materialIcon="add"
@@ -582,8 +583,15 @@
 	url="{$app->url('-action=manage_migrate')}"
 	label="Migrations"
 	description="A tool to help migrate to newer versions of Dataface."
-	
-	
+
+[sync_bindings]
+	permission=manage_sync_bindings
+	category=management_actions
+	url="{$app->url('-action=sync_bindings')}"
+	label="Synchronize Field Bindings"
+	description="Updates the database triggers for the current field bindings, as declared in the fields.ini files."
+
+
 [clear_views]
 	permission=clear views
 	category=management_actions

@@ -61,7 +61,7 @@ import(XFROOT.'Dataface/QueryTool.php');
  		$this->_table =& Dataface_Table::loadTable($tablename);
  		$fieldnames = array_keys($this->_table->fields(false,true));
  		$fields =& $this->_table->fields(false,true);
- 		
+ 		$sortFilters = false;
  		if ( count($this->_columns)==0 ){
  			
  			foreach ($fieldnames as $field){
@@ -81,6 +81,29 @@ import(XFROOT.'Dataface/QueryTool.php');
  				if ( @$fields[$field]['filter'] ) $this->_filterCols[] = $field;
  			}
  		}
+        if (count($this->_filterCols) > 0) {
+            uasort($this->_filterCols, function($aName, $bName) {
+                $a =& $this->_table->getField($aName);
+                $b =& $this->_table->getField($bName);
+                $oa = 0;
+                $ob = 0;
+                
+                if (isset($a['filter.order'])) {
+                    $oa = $a['filter.order'];
+                } else if (isset($a['order'])) {
+                    $oa = $a['order'];
+                }
+                if (isset($b['filter.order'])) {
+                    $ob = $b['filter.order'];
+                } else if (isset($b['order'])) {
+                    $ob = $b['order'];
+                }
+                if ($oa == $ob) {
+                    return 0;
+                }
+                return ($oa < $ob) ? -1 : 1;
+            });
+        }
  		
  		
  		$this->_resultSet =& Dataface_QueryTool::loadResult($tablename, $db, $query);
@@ -407,7 +430,7 @@ import(XFROOT.'Dataface/QueryTool.php');
 				$recordid = $record->getId();
 				
 				
-				echo "<tr class=\"listing $rowClass\">";
+				echo "<tr class=\"listing $rowClass\" xf-record-id=\"".df_escape($recordid)."\">";
 				if ( $canSelect ) {
 					$permStr = array();
 					foreach ($recperms as $pk=>$pv){
@@ -439,7 +462,25 @@ import(XFROOT.'Dataface/QueryTool.php');
 				if ( count($actions)>0){
 					echo ' <span class="row-actions">';
 					foreach ($actions as $action){
-						echo '<a href="'.df_escape($action['url']).'" class="'.df_escape($action['class']).' '.(@$action['icon']?'with-icon':'').'" '.(@$action['icon']?' style="'.df_escape('background-image: url('.$action['icon'].')').'"':'').(@$action['target']?' target="'.df_escape($action['target']).'"':'').' title="'.df_escape(@$action['description']?$action['description']:$action['label']).'"><span>'.df_escape($action['label']).'</span></a> ';
+                        $materialIcon = '';
+                        if (@$action['materialIcon']) {
+                            $materialIconStyle = @$action['materialIconStyle'] ? 
+                                $action['materialIconStyle'] : 
+                                '';
+                            $materialIcon = '<i class="material-icons '.df_escape($materialIconStyle).'">'.df_escape($action['materialIcon']).'</i>';
+                            //echo "MaterialICon $materialIcon";exit;
+                        }
+                        
+                        $url = $action['url'];
+                        $onclick = @$action['onclick'];
+                        if ($onclick) {
+                            $url = 'javascript:void(0);';
+                            $onclick = 'onclick="'.htmlspecialchars($onclick).'" ';
+                        }
+						echo '<a href="'.df_escape($url).'" '.$onclick.
+                            'class="'.df_escape($action['class']).' '.
+                                ((@$action['icon'] or $materialIcon)?'with-icon':'').'" '.
+                                    (@$action['icon']?' style="'.df_escape('background-image: url('.$action['icon'].')').'"':'').(@$action['target']?' target="'.df_escape($action['target']).'"':'').' title="'.df_escape(@$action['description']?$action['description']:$action['label']).'">'.$materialIcon.'<span>'.df_escape($action['label']).'</span></a> ';
 					}
 					echo '</span>';
 				}
@@ -652,6 +693,10 @@ END;
 		if (isset($app->prefs['auto_update_filters']) and !$app->prefs['auto_update_filters']) {
 			$autoUpdateFilters = false;
 		}
+        $showRowCounts = true;
+		if (isset($app->prefs['show_filter_counts']) and !$app->prefs['show_filter_counts']) {
+			$showRowCounts = false;
+		}
 		foreach ( $this->_filterCols as $col ){
 			$field =& $this->_table->getField($col);
 			
@@ -688,7 +733,8 @@ END;
 				
 				if ( $queryColVal == $row[$col] ) $selected = ' selected';
 				else $selected = '';
-				echo '<option value="'.df_escape($row[$col]).'"'.$selected.'>'.df_escape($val).' ('.$row['num'].')</option>';
+                $countStr = $showRowCounts ? (' ('.$row['num'].')') : '';
+				echo '<option value="'.df_escape($row[$col]).'"'.$selected.'>'.df_escape($val.$countStr).'</option>';
 				
 			}
 			//@xf_db_free_result($res);

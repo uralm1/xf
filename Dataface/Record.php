@@ -745,6 +745,24 @@ class Dataface_Record {
 		return true;
 	}
 
+	/**
+	 * If a table includes a field named 'xf_inserted_record_id', then its new record
+	 * form can be used as a proxy form for another form.  It just needs to 
+	 * set the record ID of the inserted record that it proxies, and then it will
+	 * automatically redirect to that record after insertion is complete.
+	 *
+	 * This can be used in conjunction with the new_record_form table-level
+	 * property in the fields.ini file which can be defined in the source
+	 * table.
+	 */
+	public function getInsertedRecordId() {
+		$insertedField = $this->_table->getField('xf_inserted_record_id');
+		if (!$insertedField) {
+			return null;
+		}
+		return $this->val('xf_inserted_record_id');
+	}
+
 
 	/**
 	 * @brief Returns the total number of related records for a given relationship.
@@ -2760,7 +2778,7 @@ class Dataface_Record {
 			return $parent->htmlValue($fieldname, $index, $where, $sort, $params);
 		}
 		$val = $this->display($fieldname, $index, $where, $sort);
-          $strval = $this->strval($fieldname, $index, $where, $sort);
+        $strval = $this->strval($fieldname, $index, $where, $sort);
 		$field = $this->_table->getField($fieldname);
 		if ( !@$field['passthru'] and $this->escapeOutput) {
 		    if (@$field['allowable_tags']) {
@@ -4567,6 +4585,21 @@ class Dataface_Record {
 		}
 		return $out;
 	}
+    
+    
+    function getStatus() {
+        
+        $del = $this->table()->getDelegate();
+        if ($del and method_exists($del, 'getStatus')) {
+            return $del->getStatus($this);
+        }
+        $fld = $this->table()->getStatusField();
+        if ($fld) {
+            return $this->val($fld);
+        }
+        return '';
+    }
+    
 
 	// @}
 	// END Record Metadata
@@ -4648,6 +4681,7 @@ class Dataface_Record {
 		return preg_match('/^image/', $this->getMimetype($fieldname,$index,$where,$sort));
 
 	}
+
 
 
 	/**

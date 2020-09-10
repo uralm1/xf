@@ -190,8 +190,8 @@ END;
 	 * @return string Paths separated by path separator char.
 	 */
 	public function getUILibraryPath() {
-  	    if ($this->UI_LIBRARY_PATH === null) {
-      	        $this->UI_LIBRARY_PATH = XFAPPROOT.'uilibs' . PATH_SEPARATOR .XFROOT.'uilibs';
+	    if ($this->UI_LIBRARY_PATH === null) {
+	        $this->UI_LIBRARY_PATH = XFAPPROOT.'uilibs' . PATH_SEPARATOR .XFROOT.'uilibs';
 	    }
 		return $this->UI_LIBRARY_PATH;
 	}
@@ -1140,17 +1140,55 @@ END;
 
 		if ( !@$query['-action'] ) {
 			$query['-action'] = $this->_conf['default_action'];
+            if (@$this->_conf['default_action.'.$this->_currentTable]) {
+                $query['-action'] = $this->_conf['default_action.'.$this->_currentTable];
+            }
+            
 			$this->_conf['using_default_action'] = true;
 		}
+        if (@$this->_conf['using_default_action'] and isset($this->_conf['default_params.'.$this->_currentTable])) {
+            $defaultParams = $this->_conf['default_params.'.$this->_currentTable];
+            if (is_string($defaultParams)) {
+                parse_str($defaultParams, $defaultParams);
+
+            }
+            if (is_array($defaultParams)) {
+                foreach ($defaultParams as $k=>$v) {
+                    if (!isset($query[$k])) {
+                        $query[$k] = $v;
+                    }
+                    
+                }
+            } 
+        }
 
 		$query['--original_action'] = $query['-action'];
 		if ( $query['-action'] == 'browse') {
+            if (@$this->_conf['default_browse_params.'.$this->_currentTable]) {
+                $defaultParams = $this->_conf['default_browse_params.'.$this->_currentTable];
+                if (is_string($defaultParams)) {
+                    parse_str($defaultParams, $defaultParams);
+
+                }
+                if (is_array($defaultParams)) {
+                    foreach ($defaultParams as $k=>$v) {
+                        if (!isset($query[$k])) {
+                            $query[$k] = $v;
+                        }
+                    
+                    }
+                } 
+            }
+            
 			if ( isset($query['-relationship']) ){
 				$query['-action'] = 'related_records_list';
 			} else if ( isset($query['-new']) and $query['-new']) {
 				$query['-action'] = 'new';
 			} else {
 				$query['-action'] = $this->_conf['default_browse_action']; // for backwards compatibility to 0.5.x
+                if (@$this->_conf['default_browse_action.'.$this->_currentTable]) {
+                    $query['-action'] = $this->_conf['default_browse_action.'.$this->_currentTable];
+                }
 			}
 		} else if ( $query['-action'] == 'find_list' ){
 			$query['-action'] = 'list';
@@ -1758,7 +1796,42 @@ END
 	 * @see startSession()
 	 */
 	function sessionEnabled(){
-		return @$_COOKIE[$this->sessionCookieKey];
+		return @$_COOKIE[$this->sessionCookieKey] or $this->getBearerToken() !== null;
+	}
+
+	/** 
+	 * Get header Authorization
+	 * */
+	private function getAuthorizationHeader(){
+			$headers = null;
+			if (isset($_SERVER['Authorization'])) {
+				$headers = trim($_SERVER["Authorization"]);
+			}
+			else if (isset($_SERVER['HTTP_AUTHORIZATION'])) { //Nginx or fast CGI
+				$headers = trim($_SERVER["HTTP_AUTHORIZATION"]);
+			} elseif (function_exists('apache_request_headers')) {
+				$requestHeaders = apache_request_headers();
+				// Server-side fix for bug in old Android versions (a nice side-effect of this fix means we don't care about capitalization for Authorization)
+				$requestHeaders = array_combine(array_map('ucwords', array_keys($requestHeaders)), array_values($requestHeaders));
+				//print_r($requestHeaders);
+				if (isset($requestHeaders['Authorization'])) {
+					$headers = trim($requestHeaders['Authorization']);
+				}
+			}
+			return $headers;
+		}
+	/**
+	 * get access token from header
+	 * */
+	private function getBearerToken() {
+		$headers = $this->getAuthorizationHeader();
+		// HEADER: Get the access token from the header
+		if (!empty($headers)) {
+			if (preg_match('/Bearer\s(\S+)/', $headers, $matches)) {
+				return $matches[1];
+			}
+		}
+		return null;
 	}
 
 	/**
@@ -1778,7 +1851,20 @@ END
 		if ( !$this->sessionEnabled() ){
 		    $this->enableSessions();
 		}
-		if ( session_id() == "" ){
+		$bearerToken = $this->getBearerToken();
+		$sessionFromBearer = false;
+		if (session_id() == "" and $bearerToken) {
+			// We'll allow users to keep the php session ID 
+			// in the bearer ID
+			$parts = explode('.', $bearerToken);
+			//echo "Parts[0] = {$parts[0]} vs ".md5('sessid');
+			if (count($parts) == 2 and $parts[0] == md5('sessid')) {
+				session_id(base64_decode($parts[1]));
+				$sessionFromBearer = true;
+			}
+			
+		}
+		if ( session_id() == "" or $sessionFromBearer){
 			if ( !isset($conf) ){
 				if ( isset($this->_conf['_auth']) ) $conf = $this->_conf['_auth'];
 				else $conf = array();
@@ -1987,6 +2073,16 @@ END
 	 */
 	function addHeadContent($content){
 		$this->headContent[] = $content;
+	}
+	
+	private $bodyCSSClasses = array();
+	
+	function addBodyCSSClass($class) {
+		$this->bodyCSSClasses[] = $class;
+	}
+	
+	function getBodyCSSClasses() {
+		return implode(' ', $this->bodyCSSClasses);
 	}
 
 	/**
@@ -2629,11 +2725,9 @@ END
 				$uuid = df_error_log($ex);
 				header('Content-type: application/json; charset="'.$this->_conf['oe'].'"');
 				$resp = array(
-					array(
-						'code' => '500', 
-						'message' => 'Internal server error.  Check error log for details',
-						'uuid' => $uuid
-					)
+					'code' => '500', 
+					'message' => 'Internal server error.  Check error log for details',
+					'uuid' => $uuid
 				);
 				$errorMessage = 'Check error log for details.';
 				$errorCode = $ex->getCode();
@@ -2647,7 +2741,7 @@ END
 				exit;
 			}
 			if ($ex->getCode() == DATAFACE_E_NOTICE) {
-  				df_display(array('body'=>'<div class="portalMessageWrapper"><div class="responsive-content"><div class="portalMessage"><ul><li>'.htmlspecialchars($ex->getMessage()).'</li></ul></div></div></div>'), 'Dataface_Main_Template.html');
+				df_display(array('body'=>'<div class="portalMessageWrapper"><div class="responsive-content"><div class="portalMessage"><ul><li>'.htmlspecialchars($ex->getMessage()).'</li></ul></div></div></div>'), 'Dataface_Main_Template.html');
 				return;
 			}
 			$uuid = df_error_log($ex);

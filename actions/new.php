@@ -36,6 +36,8 @@ class dataface_actions_new {
 		$formTool =& Dataface_FormTool::getInstance();
 		$app =& Dataface_Application::getInstance();
 		$query =& $app->getQuery();
+		
+		$app->addBodyCSSClass('no-table-tabs');
 
 		$new = true;
 
@@ -47,6 +49,17 @@ class dataface_actions_new {
 
 		$currentRecord = new Dataface_Record($query['-table'], array());
 		$currentTable =& Dataface_Table::loadTable($query['-table']);
+		if (!$currentTable or PEAR::isError($currentTable)) {
+			die("No such table");
+		}
+		
+		if (!$_POST) {
+			$newRecordTableName = $currentTable->getNewRecordFormTable();
+			if ($newRecordTableName != $currentTable->tablename) {
+				header('Location: '.$app->url(array('-table' => $newRecordTableName), true, true));
+				exit;
+			}
+		}
 
 		$app->setPageTitle(
 		    df_translate(
@@ -205,9 +218,21 @@ class dataface_actions_new {
 				 */
 				//$query = $form->_record->getValues(array_keys($form->_record->_table->keys()));
 				$currentRecord->secureDisplay = false;
-				if ( $currentRecord->checkPermission('edit') ){
-					$nextAction = 'edit';
+                $newAction = Dataface_ActionTool::getInstance()->getAction(array('name'=>'new'));
+                if (@$newAction['after_action.'.$query['-table']]) {
+					$nextAction = $newAction['after_action_'.$query['-table']];
+				} else if (@$newAction['after_action']) {
+					$nextAction = $newAction['after_action'];
+                    
 				} else {
+				    $nextAction = 'edit';
+				}
+                $nextActionConfig = Dataface_ActionTool::getInstance()->getAction(array('name'=>$nextAction));
+                $perm = '';
+                if ($nextActionConfig and @$nextActionConfig['permission']) {
+                    $perm = $nextActionConfig['permission'];
+                }
+				if ( $perm and !$currentRecord->checkPermission($perm) ){
 					$nextAction = 'view';
 				}
 				$urlParams = array('-action'=>$nextAction);
@@ -223,6 +248,11 @@ class dataface_actions_new {
 						$urlParams[$passedParam] = $query[$passedParam];
 					}
 				}
+				
+				if ($currentRecord->getInsertedRecordId()) {
+					$currentRecord = df_get_record_by_id($currentRecord->getInsertedRecordId());
+				}
+				
 				$url = $currentRecord->getURL($urlParams);
 				if ( @$query['--lang'] ){
 					$url .= '&--lang='.$query['--lang'];
@@ -240,6 +270,9 @@ class dataface_actions_new {
 				if ( strpos($url, '?') === false ) $url .= '?';
 				$link = $url.'&--saved=1&--msg='.$msg;
                                 //echo "$link";exit;
+                                
+                                
+                
 				$app->redirect("$link");
 
 			} else {
@@ -279,8 +312,24 @@ class dataface_actions_new {
 		}
 		$context = array('form'=>&$out);
 		$context['tabs'] = $formTool->createHTMLTabs($currentRecord, $form, @$query['--tab']);
-
-
+		$context['new_record_header_label'] = 'Create new '.$currentTable->getSingularLabel();
+		
+		if (@$currentTable->_atts['new_record_label']) {
+			$context['new_record_header_label'] = $currentTable->_atts['new_record_label'];
+		}
+		if (@$currentTable->_atts['new_record_label_html']) {
+			$context['new_record_header_label_html'] = $currentTable->_atts['new_record_label_html'];
+		}
+		
+		
+		$context['new_record_header_description'] = "";
+		if (@$currentTable->_atts['new_record_description']) {
+			$context['new_record_header_description'] = $currentTable->_atts['new_record_description'];
+		}
+		if (@$currentTable->_atts['new_record_description_html']) {
+			$context['new_record_header_description_html'] = $currentTable->_atts['new_record_description_html'];
+		}
+		
                 if ( isset($query['-template']) ) $template = $query['-template'];
                 else if ( @$query['-headless'] ) $template = 'Dataface_New_Record_headless.html';
 		else $template = 'Dataface_New_Record.html';

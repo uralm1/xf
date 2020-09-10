@@ -514,6 +514,47 @@ function df_save_record(&$record, $keys=null, $lang=null, $secure=false){
 
 }
 
+function xf_script($script, $useJavascriptTool=true) {
+    if ($useJavascriptTool) {
+        $pos = strpos($script, ':');
+        if ($pos == 4 and substr($script, 0, 4) == 'http') {
+            $useJavascriptTool = false;
+        } else if ($pos == 5 and substr($script, 0, 5) == 'https') {
+            $useJavascriptTool = false;
+        } else if (strlen($script) > 2 and substr($script, 0, 2) == '//') {
+            $useJavascriptTool = false;
+        }
+        
+    }
+    if ($useJavascriptTool) {
+        import(XFROOT.'Dataface/JavascriptTool.php');
+        Dataface_JavascriptTool::getInstance()->import($script);
+    } else {
+        Dataface_Application::getInstance()->addHeadContent('<script src="'.htmlspecialchars($script).'"></script>');
+    }
+}
+
+function xf_stylesheet($sheet, $useCSSTool=true) {
+
+    if ($useCSSTool) {
+        $pos = strpos($sheet, ':');
+        if ($pos == 4 and substr($sheet, 0, 4) == 'http') {
+            $useCSSTool = false;
+        } else if ($pos == 5 and substr($sheet, 0, 5) == 'https') {
+            $useCSSTool = false;
+        } else if (strlen($sheet) > 2 and substr($sheet, 0, 2) == '//') {
+            $useCSSTool = false;
+        }
+        
+    }
+    if ($useCSSTool) {
+        import(XFROOT.'Dataface/CSSTool.php');
+        Dataface_CSSTool::getInstance()->import($sheet);
+    } else {
+        Dataface_Application::getInstance()->addHeadContent('<link rel="stylesheet" type="text/css" href="'.htmlspecialchars($sheet).'"/>');
+    }
+}
+
 function &df_get_valuelist($tablename, $valuelistname){
 	$table = Dataface_Table::loadTable($tablename);
 	$vl =& $table->getValuelist($valuelistname);

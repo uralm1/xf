@@ -1200,6 +1200,57 @@ class Dataface_Table {
 
 	}
 
+    private $statusField;
+
+	/**
+	 * @brief Makes a best guess at which field in this table stores the record
+	 * status.  The record status is a space-delimited string with tokens denoting
+     * status markers.  These are akin to CSS classes in HTML tags.
+	 *
+	 * @return string The name of the best candidate column to be the status.
+	 * @see Dataface_Record::getStatus()
+	 */
+	function getStatusField(){
+		if ( !isset($this->statusField) ){
+            $this->statusField = '';
+    		foreach ($this->fields(false,true) as $field){
+    			if (@$field['status']) {
+    			    $this->statusField = $field['name'];
+                    break;
+    			}
+    		}
+
+		}
+		return $this->statusField;
+
+	}
+    private $enclosureField;
+    
+    /**
+     * Gets the field that contains an 'enclosure' for RSS feeds.  An enclosure is
+     * generally an audio or video file that is used for podcasting.
+     * @return string The name of the best candidate column to be the enclosure field or null
+     */
+    function getEnclosureField() {
+        if (!isset($this->enclosureField)) {
+            $this->enclosureField = '';
+            foreach ($this->fields(false, true) as $field) {
+                if (@$field['enclosure']) {
+                    $this->enclosureField = $field['name'];
+                    break;
+                }
+                if ($this->isBlob($field['name']) or $this->isContainer($field['name'])) {
+                    $this->enclosureField = $field['name'];
+                }
+            }
+        }
+        if ($this->enclosureField) {
+            return $this->enclosureField;
+        } else {
+            return null;
+        }
+        
+    }
 
 	/**
 	 * @brief Makes a best guess at which field stores the creation date of the record.
@@ -1716,6 +1767,9 @@ class Dataface_Table {
                             $widget['question'] = df_translate('tables.'.$curr['tablename'].'.fields.'.$fieldname.'.widget.question',$widget['question']);
 
                         }
+                        if (@$curr['ajax_value']) {
+                            $curr['widget']['atts']['data-xf-update-url'] = $curr['ajax_value'];
+                        }
                         unset($widget);
 						$this->_transient_fields[$fieldname] = $curr;
 					}
@@ -1993,6 +2047,25 @@ class Dataface_Table {
 			$table =& self::loadTable($field['tablename']);
 			return $table->getDefaultValue($fieldname);
 		}
+        if (@$field['ownerstamp']) {
+            if (class_exists('Dataface_AuthenticationTool')) {
+                $auth = Dataface_AuthenticationTool::getInstance();
+                if ($this->isText($fieldname)) {
+                    return $auth->getLoggedInUserName();
+                } else {
+                    $user = $auth->getLoggedInUser();
+                    if ($user) {
+                        $keys = array_keys($user->table()->keys());
+                        if (count($keys) == 1) {
+                            $id = $user->val($keys[0]);
+                            return $id;
+                        }
+                    }
+                }
+                
+            }
+            
+        }
 		$delegate =& $this->getDelegate();
 		if ( isset($delegate) and method_exists($delegate, $fieldname.'__default') ){
 			return call_user_func(array(&$delegate, $fieldname.'__default'));
@@ -2601,6 +2674,9 @@ class Dataface_Table {
 		foreach (array_keys($this->_fields) as $key){
 		    if (isset($field)) unset($field);
 		    $field =&  $this->_fields[$key];
+		    if ($key == 'xf_inserted_record_id') {
+		    	$field['widget']['type'] = 'hidden';
+		    }
 
 			if ( isset($this->_fields[$key]['group'])  ){
 				$grpname = $this->_fields[$key]['group'];
@@ -2616,27 +2692,33 @@ class Dataface_Table {
 					);
 				}
 			}
-			if ( strcasecmp($this->_fields[$key]['Type'], 'container') === 0){
+            if (@$field['ownerstamp'] or @$field['timestamp'] == 'insert' or @$field['timestamp'] == 'update') {
+                $field['widget']['type'] = 'hidden';
+            }
+            if (@$field['ajax_value']) {
+                $field['widget']['atts']['data-xf-update-url'] = $field['ajax_value'];
+            }
+			if ( strcasecmp($field['Type'], 'container') === 0){
 				/*
 				 * This field is a Container field.  We will need to set up the save path.
 				 * If no save path is specified we will create a directory by the name
 				 * of this field inside the table's directory.
 				 */
-				if ( $this->_fields[$key]['widget']['type'] == 'text' ) $this->_fields[$key]['widget']['type'] = 'file';
-				if ( !isset( $this->_fields[$key]['savepath'] ) ){
-					$this->_fields[$key]['savepath'] = $this->basePath().'/tables/'.$this->tablename.'/'.$key;
-				} else if ( strpos($this->_fields[$key]['savepath'], '/') !== 0 and !preg_match('/^[a-z0-9]{1,5}:\/\//', $this->_fields[$key]['savepath']) ) {
-					$this->_fields[$key]['savepath'] = DATAFACE_SITE_PATH.'/'.$this->_fields[$key]['savepath'];
+				if ( $field['widget']['type'] == 'text' ) $field['widget']['type'] = 'file';
+				if ( !isset( $field['savepath'] ) ){
+					$field['savepath'] = $this->basePath().'/tables/'.$this->tablename.'/'.$key;
+				} else if ( strpos($field['savepath'], '/') !== 0 and !preg_match('/^[a-z0-9]{1,5}:\/\//', $field['savepath']) ) {
+					$field['savepath'] = DATAFACE_SITE_PATH.'/'.$field['savepath'];
 				}
 
-				if ( !isset($this->_fields[$key]['url']) ){
-					$this->_fields[$key]['url'] = str_replace(DATAFACE_SITE_PATH, DATAFACE_SITE_URL, $this->_fields[$key]['savepath']);
+				if ( !isset($field['url']) ){
+					$field['url'] = str_replace(DATAFACE_SITE_PATH, DATAFACE_SITE_URL, $field['savepath']);
 
-				} else if ( strpos( $this->_fields[$key]['url'], '/') !== 0 and strpos($this->_fields[$key]['url'], 'http://') !== 0 ){
-					$this->_fields[$key]['url'] = DATAFACE_SITE_URL.'/'.$this->_fields[$key]['url'];
+				} else if ( strpos( $field['url'], '/') !== 0 and strpos($field['url'], 'http://') !== 0 ){
+					$field['url'] = DATAFACE_SITE_URL.'/'.$field['url'];
 				}
-                                if ( !isset($this->_fields[$key]['noLinkFromListView']) ){
-                                    $this->_fields[$key]['noLinkFromListView'] = 1;
+                                if ( !isset($field['noLinkFromListView']) ){
+                                    $field['noLinkFromListView'] = 1;
                                 }
 			}
 
@@ -3170,6 +3252,22 @@ class Dataface_Table {
             }
             return $this->_atts['label'];
 
+	}
+	
+	/**
+	 * Gets the name of the table used for the new record form on this
+	 * table.  This is handy if you want to use a "dummy" table to handle
+	 * new record insertion into this table.
+	 *
+	 * The dummy table is responsible for adding the appropriate record into
+	 * this table, and it should contain a "xf_inserted_record_id" field, which
+	 * will must be populated with the record from *this* table.
+	 */
+	function getNewRecordFormTable() {
+		if (@$this->_atts['new_record_form']) {
+			return $this->_atts['new_record_form'];
+		}
+		return $this->tablename;
 	}
 
 
@@ -4549,18 +4647,20 @@ class Dataface_Table {
                 }
             }
         }
-        if (!isset(self::$knownImportFilters[$this->_tablename])) {
+        if (!isset(self::$knownImportFilters[$this->tablename])) {
             $filters = $this->getImportFilters();
-            self::$knownImportFilters[$this->_tablename] = count($filters)>0;
+            self::$knownImportFilters[$this->tablename] = count($filters)>0;
             if (DATAFACE_EXTENSION_LOADED_APC) {
                 apc_store(DATAFACE_SITE_PATH.'/import_filters', self::$knownImportFilters);
             } else if (@$_SESSION) {
                 $_SESSION['import_filters'] = self::$knownImportFilters;
             }
         }
-        return self::$knownImportFilters[$this->_tablename];
+        return self::$knownImportFilters[$this->tablename];
 	}
 
+    
+    
 	/**
 	 * @brief Import filters facilitate the importing of data into the table.
 	 * @return array Array of Dataface_ImportFilter objects

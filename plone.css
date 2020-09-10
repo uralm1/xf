@@ -2646,7 +2646,7 @@ td.calendar-right { vertical-align: top; padding: 1em;}
 div.section_tools a { padding-right: 1em;}
 
 .row-actions {
-	display: block;
+	display: flex;
 	height: 25px;
 	padding-left: 7px;
 	white-space: nowrap;
@@ -2665,6 +2665,11 @@ div.section_tools a { padding-right: 1em;}
 	display: none;
 }
 
+.row-actions a.with-icon > i {
+    
+    font-size: 150%;
+}
+
 .row-actions a.with-icon {
 	display: block;
 	float: left;
@@ -2672,7 +2677,7 @@ div.section_tools a { padding-right: 1em;}
 	width: 20px;
 	height: 20px;
 	border: none;
-	margin: 0;
+	margin: 5px;
 	padding: 0;
 	
 	
@@ -2793,6 +2798,8 @@ table.xf-grid-table td {
     height: 14px;
     
 }
+
+
 
 /*Dropdown navigation menus*/
 div.xf-button-bar-actions a,
@@ -3155,6 +3162,11 @@ body.two-col #status-bar .responsive-content,
     margin-right: -1px !important;
     margin-top: -1px;
   }
+  
+	.xf-form-group-wrapper {
+		border-left: none !important;
+		border-right:none !important;
+	}
   .sidebox,
  .portlet > div,
  .resultlist-filters,
@@ -3200,4 +3212,12 @@ body.two-col #status-bar .responsive-content,
 
   .view-related-records-actions-wrapper {
       margin-top: -3em;
+  }
+  
+  body.no-table-tabs #table_tabs_wrapper {
+  	display:none;
+  }
+  
+  .new-record-header {
+  	padding-bottom: 1em;
   }
