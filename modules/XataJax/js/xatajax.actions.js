@@ -113,7 +113,7 @@
 			if ( typeof(emptyCallback) == 'function' ){
 				emptyCallback(params, container);
 			} else {
-				alert('Не выбрано ни одной записи!');
+				alert('No records are currently selected.  Please first select the records that you wish to act upon.');
 			}
 			
 			return;
@@ -174,9 +174,9 @@
   		    emptyCallback = function() {
       		        if (confirm(useFullSetIfEmpty)) {
   		            window.location.href = href;
-   		        }
+    		        }
 		    };
-    		}
+ 		}
 		//alert(confirmMsg);
 		var params = XataJax.util.getRequestParams(href);
 

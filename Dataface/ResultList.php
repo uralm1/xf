@@ -128,9 +128,9 @@ import(XFROOT.'Dataface/QueryTool.php');
 		}
  		$out = $record->preview($fieldname);
  		$fulltext = "";
- 		if ( mb_strlen($out) > $maxcols ){
+ 		if ( strlen($out) > $maxcols ){
  		    $fulltext = $out;
- 		    $out = mb_substr($out, 0, $maxcols).'…';
+ 		    $out = substr($out, 0, $maxcols).'...';
  		}
  		if ( $fulltext ){
             $fulltext = 'data-fulltext="'.df_escape($fulltext).'"';

@@ -148,7 +148,7 @@ END;
     
     
     if (isset($params['see_all']) ){
-    	$links .= '<a href="'.$params['see_all'].'">'.df_translate('sidebar.see_all', 'see all').'</a>';
+    	$links .= '<a href="'.$params['see_all'].'">see all</a>';
     }
     if ( !@empty($params['edit_url']) ){
     	$links .= '<a href="'.$params['edit_url'].'">edit</a>';

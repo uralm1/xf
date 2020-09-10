@@ -35,8 +35,8 @@ class HTML_QuickForm_table extends HTML_QuickForm_element {
         $this->_type = 'table';
        
     } //end constructor
-	function HTML_QuickForm_table($elementName=null, $elementLabel=null, $attributes=null) { self::__construct($elementName, $elementLabel, $attributes); }
-
+    	function HTML_QuickForm_table($elementName=null, $elementLabel=null, $attributes=null) { self::__construct($elementName, $elementLabel, $attributes); }
+    
     
     function addField(&$element){
     	$this->columnTemplates[] =& $element;
@@ -162,7 +162,7 @@ class HTML_QuickForm_table extends HTML_QuickForm_element {
         				';
         	$i = 0;
         	$strHtml .= '<tr class="prototype" style="display:none">
-        					<td><input type="button" value="'.df_translate("widget.table.delete", "Delete").'" onclick="deleteRow(event)" name="'.$this->getName().'[prototype][__delete]"/></td>';
+        					<td><input type="button" value="Delete" onclick="deleteRow(event)" name="'.$this->getName().'[prototype][__delete]"/></td>';
         	
         	foreach ($cols as $col){
 				$field = unserialize(serialize($col));
@@ -174,7 +174,7 @@ class HTML_QuickForm_table extends HTML_QuickForm_element {
         	foreach ($values as $row=>$value){
         		//$row = $i++;
         		$strHtml .= '<tr>
-        					<td><input type="button" value="'.df_translate("widget.table.delete", "Delete").'" onclick="deleteRow(event)" name="'.$this->getName().'['.$row.'][__delete]"/></td>
+        					<td><input type="button" value="Delete" onclick="deleteRow(event)" name="'.$this->getName().'['.$row.'][__delete]"/></td>
         		';
         		
         		foreach ($cols as $col){
@@ -194,7 +194,7 @@ class HTML_QuickForm_table extends HTML_QuickForm_element {
         	$strHtml .= '</tbody></table>
         	';
         	
-        	$strHtml .= '<input type="button" onclick="insertNewTableRow(\''.$this->getName().'\')" value="'.df_translate("widget.table.addrow", "Add Row").'"/>';
+        	$strHtml .= '<input type="button" onclick="insertNewTableRow(\''.$this->getName().'\')" value="Add Row"/>';
         	
         	return (empty($js)? '': "<script type=\"text/javascript\">\n//<![CDATA[\n" . $js . "//]]>\n</script>") .
                $strHtml;
