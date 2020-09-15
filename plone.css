@@ -113,7 +113,6 @@ h6 a {
 
 h1 {
     font-size: 160%;
-    padding-right: 4em;
 }
 
 h2 {
@@ -3181,9 +3180,7 @@ body.two-col #status-bar .responsive-content,
       border: none !important;
   }
 
-  .advanced-search-heading, .edit-record-heading {
-      display:none;
-  }
+ 
 
   .resultControllerWrapper {
     font-size: 90%;
@@ -3288,7 +3285,7 @@ body.two-col #status-bar .responsive-content,
       width: 30px;
       height: 30px;
       top: 10px;
-      left: 10px;
+      right: 10px;
       border-radius: 15px;
       box-shadow:none;
       border: none;
@@ -3297,6 +3294,7 @@ body.two-col #status-bar .responsive-content,
       margin:0;
       padding:0;
   }
+
   
   a.cancel-back-button {
       display:block;
@@ -3321,6 +3319,11 @@ body.two-col #status-bar .responsive-content,
       transform: translateX(-50%) translateY(-50%);
       font-size: 20px;
       font-weight:bold;
+  }
+  
+  body.large .cancel-back-button,
+  body.small.RecordDialogBody .cancel-back-button {
+      display:none;
   }
   
   
@@ -3864,12 +3867,58 @@ body.two-col #status-bar .responsive-content,
         margin:0;
     }
     
-    table.Dataface_QuickForm-table-wrapper > tbody > tr > td .field input {
+    table.Dataface_QuickForm-table-wrapper > tbody > tr > td .field label {
+        font-size: 50%;
+        margin:0;
+        padding:0;
+        color: rgb(10, 132, 255);
+    }
+    table.Dataface_QuickForm-table-wrapper > tbody > tr > td .field input,
+    table.Dataface_QuickForm-table-wrapper > tbody > tr > td .field select,
+    table.Dataface_QuickForm-table-wrapper > tbody > tr > td .field textarea  {
         width: 100%;
         box-sizing: border-box;
         margin:0;
     }
     
+    table.Dataface_QuickForm-table-wrapper > tbody > tr > td .field input[type=checkbox] {
+        width: auto;
+    }
+    
+    .xf-form-group-wrapper.button-section {
+        position:fixed;
+        bottom:0;
+        width:100%;
+        left:0;
+        right:0;
+        box-sizing:border-box;
+        margin:0;
+        background-color:white;
+    }
+    .xf-form-group-wrapper.button-section tr,
+    .xf-form-group-wrapper.button-section td {
+        padding:0;
+        margin:0;
+        
+    }
+    .xf-form-group-wrapper.button-section input[name="--session:save"] {
+        color:white;
+        background-color: rgb(10, 132, 255);
+        width: 100%;
+        box-sizing:border-box;
+    }
+    
+    .xf-form-group-wrapper.button-section .field > div > table {
+        width:100%;
+        box-sizing:border-box;
+    }
+    
+    
+    
+    table.Dataface_QuickForm-table-wrapper > tbody > tr > td .field select {
+        padding: 5px;
+        font-size: 14pt;
+    }
     
     .mobile-record-actions > ul {
         display:flex;
@@ -3984,6 +4033,95 @@ body.two-col #status-bar .responsive-content,
         max-width: 275px;
     }
 }
+
+
+body.small.RecordDialogBody {
+    padding-top: 0px !important;
+    padding-bottom: 0px !important;
+}
   
-  
-  
+body.small.RecordDialogBody h1.new-record-header-label {
+    display:none;
+}
+
+body.small #selected-actions {
+    display:none;
+}
+
+body.small.no-mobile-header .sidemenu.mobile-header,
+body.small.no-mobile-header .openSidebarMenu,
+body.small.no-mobile-header .sidebarIconToggle {
+    display:none;
+    
+}
+
+body.small.no-table-tabs nav.table_tabs_mobile {
+    display:none;
+}
+
+body.small.no-fab div.zoom,
+body.large div.zoom {
+    display:none;
+}
+body.small .search-instructions-link {
+    display:none;
+}
+
+body.small h2.advanced-search-heading,
+body.small h1.new-record-header-label,
+body.small h3.edit-record-heading  {
+    font-size: 75%;
+    padding: 10px;
+}
+
+
+body.small .ui-dialog-titlebar-close {
+    position:fixed;
+    background-color: #eaeaea !important;
+    width: 30px;
+    height: 30px;
+    top: 10px;
+    right: 10px;
+    border-radius: 15px;
+    box-shadow:none;
+    border: none;
+    font-size: 30px;
+    text-align:center;
+    margin:0;
+    padding:0;
+}
+
+
+
+ul.xf-fieldgroup-menu {
+    list-style-type:none;
+    list-style-image: none;
+    display:flex;
+    border-top: 1px solid #eaeaea;
+    margin:0;
+}
+
+ul.xf-fieldgroup-menu > li {
+    flex-grow:1;
+    margin:0;
+    padding:10px;
+    padding-bottom:0;
+
+}
+
+.xf-form-group-wrapper.hidden {
+    display:none;
+}
+
+.xf-form-group-wrapper.noheader > h3.Dataface_collapsible_sidebar {
+    display:none;
+}
+
+.xf-fieldgroup-menu > li > a.disabled {
+    color: #cccccc;
+}
+
+
+
+
+

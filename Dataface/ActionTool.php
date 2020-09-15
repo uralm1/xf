@@ -229,6 +229,18 @@ class Dataface_ActionTool {
 			        continue;
 			    }
 			}
+            if (@$params['with']) {
+                $missingKey = false;
+                foreach (explode(' ', $params['with']) as $withKey) {
+                    if (!$action[$withKey]) {
+                        $missingKey = true;
+                        break;
+                    }
+                }
+                if ($missingKey) {
+                    continue;
+                }
+            }
 			if (@$params['sanstags']) {
 			    if (@$action['tags'] and strpos($action['tags'], $params['sanstags']) !== false) {
 			        continue;
@@ -288,6 +300,20 @@ class Dataface_ActionTool {
 					}
 				}
 			}
+            $i18nTable = @$params['table'];
+            if (!$i18nTable) {
+                if (!@$query) {
+                    $query = $app->getQuery();
+                }
+                $i18nTable = $query['-table'];
+            }
+            
+            $keyBase = 'tables.'.$i18nTable.'.actions.'.$action['name'].'.';
+            $action['label'] = df_translate($keyBase.'label', @$action['label']);
+            $action['description'] = df_translate($keyBase.'description', @$action['description']);
+            $action['materialIcon'] = df_translate($keyBase.'materialIcon', @$action['materialIcon']);
+                
+            
 			$out[$key] =& $action;
 			
 			unset($action);
