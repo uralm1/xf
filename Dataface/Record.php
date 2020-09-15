@@ -2709,6 +2709,22 @@ class Dataface_Record {
 	}
 
 
+    /**
+     * Gets a table attribute.  Table attributes are defined in the fields.ini file in the global
+     * scope.  They can be overridden in the delegate class via the attribute__attname methods.
+     * @since 3.0
+     */
+    function getTableAttribute($attname) {
+        $del = $this->_table->getDelegate();
+        $method = 'attribute__'.$attname;
+        if ($del and method_exists($del, $method)) {
+            $out = $del->$method($this);
+            if (isset($out)) {
+                return $out;
+            }
+        }
+        return @$this->_table->_atts[$attname];
+    }
 
 
 	/**
@@ -2745,7 +2761,10 @@ class Dataface_Record {
 		$recid = $this->getId();
 		$uri = $recid.'#'.$fieldname;
 		$domid = $uri.'-'.rand();
-
+        if (is_string($params)) {
+            parse_str($params, $tmp);
+            $params = $tmp;
+        }
 
 
 		$delegate =& $this->_table->getDelegate();
@@ -4154,6 +4173,38 @@ class Dataface_Record {
 			return $res;
 		} else if ( $descriptionField = $this->_table->getDescriptionField() ){
 			return $this->htmlValue($descriptionField);
+		} else {
+			return '';
+		}
+
+	}
+    
+	/**
+	 * @brief Returns a brief by-line of the record for use in listings and summaries.
+	 *
+	 * @return string A string by-line of the record.
+	 *
+	 * @since 0.8
+	 *
+	 * @section Synopsis
+	 *
+	 * This method first checks to see if a getByline() method has been explicitly
+	 * defined in the delegate class and returns its result if found.  If none is found
+	 * it will try to guess which field is meant to be used as a by-line based on
+	 * various heuristics.  Usually it will just use the first TEXT field it finds and
+	 * treat that as a description.
+	 *
+	 * 
+	 *
+	 * @see http://www.xataface.com/wiki/Delegate_class_methods
+	 * @see http://xataface.com/documentation/tutorial/getting_started/delegate_classes
+	 * @see Dataface_Table::getBylineField()
+	 */
+	function getByLine(){
+		if ( ($res = $this->callDelegateFunction('getByline')) !== null ){
+			return $res;
+		} else if ( $bylineField = $this->_table->getBylineField() ){
+			return $this->htmlValue($bylineField);
 		} else {
 			return '';
 		}

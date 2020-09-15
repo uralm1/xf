@@ -45,6 +45,9 @@ import(XFROOT.'Dataface/QueryTool.php');
  	
  	var $_results;
  	var $_resultSet;
+    // List style allows you to set the style of the list to override default.
+    // Values: auto or mobile
+    var $listStyle = 'auto';
  	
  	var $_filterCols = array();
  
@@ -59,6 +62,7 @@ import(XFROOT.'Dataface/QueryTool.php');
  		if( !is_array($query) ) $this->_query = array();
  		
  		$this->_table =& Dataface_Table::loadTable($tablename);
+        $this->listStyle = $this->_table->getListStyle();
  		$fieldnames = array_keys($this->_table->fields(false,true));
  		$fields =& $this->_table->fields(false,true);
  		$sortFilters = false;
@@ -109,7 +113,9 @@ import(XFROOT.'Dataface/QueryTool.php');
  		$this->_resultSet =& Dataface_QueryTool::loadResult($tablename, $db, $query);
  		
  	}
- 	 	function Dataface_ResultList($tablename, $db='', $columns=array(), $query=array()) { self::__construct($tablename, $db, $columns, $query); }
+ 	function Dataface_ResultList($tablename, $db='', $columns=array(), $query=array()) {
+        self::__construct($tablename, $db, $columns, $query); 
+    }
  	
  	function renderCell(&$record, $fieldname){
  		$del =& $record->_table->getDelegate();
@@ -135,7 +141,10 @@ import(XFROOT.'Dataface/QueryTool.php');
  		if ( $fulltext ){
             $fulltext = 'data-fulltext="'.df_escape($fulltext).'"';
         }
- 		if ( !@$field['noEditInListView'] and @$field['noLinkFromListView'] and $record->checkPermission('edit', array('field'=>$fieldname) ) ){
+ 		if ( !@$field['noEditInListView'] and 
+                @$field['noLinkFromListView'] and 
+                $record->checkPermission('edit', array('field'=>$fieldname) ) ) {
+                    
  			$recid = $record->getId();
  			
  			$out = '<span df:showlink="1" df:id="'.$recid.'#'.$fieldname.'" class="df__editable" '.$fulltext.'>'.df_escape($out).'</span>';
@@ -159,7 +168,7 @@ import(XFROOT.'Dataface/QueryTool.php');
  		return null;
  	}
  	
-        function getTfootContent(){
+    function getTfootContent(){
             if ( !isset($tablename) ) $tablename = $this->_table->tablename;
  		$del =& $this->_table->getDelegate();
  		if ( isset($del) and method_exists($del, 'renderRowFooterTemplate') ){
@@ -171,7 +180,7 @@ import(XFROOT.'Dataface/QueryTool.php');
  			return $appdel->renderRowFooterTemplate($tablename);
  		}
  		return '';
-        }
+    }
         
  	function renderRow(&$record, $mode = 'desktop'){
  		$del =& $record->_table->getDelegate();
@@ -198,6 +207,8 @@ import(XFROOT.'Dataface/QueryTool.php');
  		}
  		
  	}
+    
+    
  	
  	function &getResults(){
  		if ( !isset($this->_results) ){
@@ -248,18 +259,63 @@ import(XFROOT.'Dataface/QueryTool.php');
  	}
  	
  	function toHtml($mode = 'all'){
+        
+        xf_script('xataface/actions/list.js');
  	    import(XFROOT.'Dataface/ActionTool.php');
  	    $mobile = $mode == 'mobile';
  	    $desktop = $mode == 'desktop';
  	    $all = $mode == 'all';
- 	    if ($all) {
- 	        $this->toHtml('mobile');
- 	        return $this->toHtml('desktop') . $this->toHtml('mobile');
- 	    }
- 	    
  		$app =& Dataface_Application::getInstance();
  		$at =& Dataface_ActionTool::getInstance();
  		$query =& $app->getQuery();
+ 	    if ($all) {
+            
+            ob_start();
+            
+            
+		    $actions = $at->getActions(['category'=>'list_settings']);
+
+            if (@$actions['list_filter']) {
+
+                // Change the label of the filter action to indicate if any filters are currently applied
+                $filterCount = 0;
+                foreach ($this->_table->fields(false, true, true) as $fieldDef) {
+                    if (@$fieldDef['filter']) {
+                        $queryVal = @$query[$fieldDef['name']];
+                        if ($queryVal and trim($queryVal)) {
+                            $filterCount++;
+                        }
+                    }
+                }
+                if ($filterCount > 0) {
+                    $actions['list_filter']['label'] .= ' • '.$filterCount;
+                }
+            }
+        
+            $cls = (@$app->prefs['use_xataface2_result_filters'] ? 'mobile' : '');
+        
+		    echo '<div class="mobile-list-settings-wrapper '.$cls.'">';
+	
+            if ( count($actions)>0){
+                echo ' <div class="mobile-list-settings">';
+                $this->print_actions($actions);
+                echo '</div>';
+            }
+	    
+		    echo '</div>';
+            
+            $filtersHtml = ob_get_contents();
+            ob_end_clean();
+ 	        //$this->toHtml('mobile');
+ 	        return $filtersHtml . $this->toHtml('desktop').$this->toHtml('mobile');
+ 	    }
+ 	    
+        
+        
+ 		
+        
+        
+        
  		if ( isset( $query['-sort']) ){
  			$sortcols = explode(',', trim($query['-sort']));
  			$sort_columns = array();
@@ -284,7 +340,7 @@ import(XFROOT.'Dataface/QueryTool.php');
  		
  		
  		
- 		if ( $this->_resultSet->found() > 0 ) {
+ 		if (true or $this->_resultSet->found() > 0 ) {
  		
  			
  			if  ($desktop and @$app->prefs['use_old_resultlist_controller'] ){
@@ -308,7 +364,12 @@ import(XFROOT.'Dataface/QueryTool.php');
 			}
 			
 			if ( $desktop and !@$app->prefs['hide_result_filters'] and count($this->_filterCols) > 0 ){
-				echo $this->getResultFilters();
+                if (@$app->prefs['use_xataface2_result_filters']) {
+                    echo $this->getResultFilters();
+                } else {
+
+                }
+				
 			}
 			unset($query);
 			
@@ -348,7 +409,7 @@ import(XFROOT.'Dataface/QueryTool.php');
 			
 			
                 echo '
-                    <table data-xataface-query="'.df_escape($sq).'" id="result_list" class="listing resultList resultList--'.$this->_tablename.'">
+                    <table data-xataface-query="'.df_escape($sq).'" id="result_list" class="listing resultList resultList--'.$this->_tablename.' list-style-'.$this->listStyle.'">
                     <thead>
                     <tr>';
                 if ( $canSelect){
@@ -440,7 +501,7 @@ import(XFROOT.'Dataface/QueryTool.php');
                     ";
             } // end if ($desktop)
             else if ($mobile) {
-                echo '<div class="mobile mobile-listing resultList--'.$this->_tablename.'" data-xataface-query="'.df_escape($sq).'">';
+                echo '<div class="mobile mobile-listing resultList--'.$this->_tablename.' list-style-'.$this->listStyle.'" data-xataface-query="'.df_escape($sq).'">';
             }
 	
 			
@@ -465,13 +526,18 @@ import(XFROOT.'Dataface/QueryTool.php');
 					continue;
 				}
 				$rowClass .= ' '.$this->getRowClass($record);
-				
+				$status = $record->getStatus();
+                if ($status) {
+                    $rowClass .= ' xf-record-status-'.$status;
+                }
 				
 				
 				$query = array_merge( $baseQuery, array( "-action"=>"browse", "-relationship"=>null, "-cursor"=>$cursor++) );
 				
 				if (  @$recperms['link'] ){
-					if ( @$app->prefs['result_list_use_geturl'] ){
+                    if (@$app->prefs['result_list_use_publiclink']) {
+                        $link = $record->getPublicLink();
+                    } else if ( @$app->prefs['result_list_use_geturl'] ){
 						$link = $record->getURL('-action=view');
 					} else {
 						
@@ -580,8 +646,9 @@ import(XFROOT.'Dataface/QueryTool.php');
 						unset($thisField);
 					}
 				} else if ($mobile) {
-				    echo "<div class='mobile-row-content $rowClass' >";
+				    echo "<div class='mobile-row-content' >";
 				    $logoField = $record->table()->getLogoField();
+                    $rowStyle = $record->getTableAttribute('row_style');
                     $aOpen = '';
                     $aClose = '';
                     if ($link) {
@@ -591,11 +658,39 @@ import(XFROOT.'Dataface/QueryTool.php');
 				    if ($logoField and $record->val($logoField) and $record->checkPermission('view', array('field' => $logoField))) {
 				        echo "<div class='mobile-logo'>$aOpen".$record->htmlValue($logoField)."$aClose</div>";
 				    } else {
-				        echo "<div class='mobile-logo'>$aOpen<i class='material-icons'>description</i>$aClose</div>";
+                        if ($rowStyle != 'external-link') {
+                            echo "<div class='mobile-logo'>$aOpen<i class='material-icons'>description</i>$aClose</div>";
+                        }
+				        
 				    }
-
-				    echo "<div class='mobile-title'>$aOpen".df_escape($record->getTitle())."$aClose</div>";
-				    echo "<div class='mobile-description'>$aOpen".df_escape($record->getDescription())."$aClose</div>";
+                    $byLine = $record->getByLine();
+                    if ($byLine) {
+                        // getByLine returns HTML content so we don't escape it.
+                        echo "<div class='mobile-byline'>".$byLine."</div>";
+                    }
+                    
+                    
+                    if ($rowStyle == 'external-link') {
+                        $externalLink = $record->val('external_link');
+                        if ($externalLink) {
+                            echo '<div class="external-link-preview" data-href="'.htmlspecialchars($externalLink['url']).'">';
+                            if (@$externalLink['cover_image']) {
+                                echo '<img class="external-link-cover-image" src="'.htmlspecialchars($externalLink['cover_image']).'"/>';
+                            }
+                            if (@$externalLink['title']) {
+                                echo '<span class="external-link-title">'.htmlspecialchars($externalLink['title']).'</span>';
+                            }
+                            
+                            echo '<span class="external-link-host">'.htmlspecialchars(parse_url($externalLink['url'], PHP_URL_HOST)).'</span>';
+                            echo '</div>';
+                        }
+                    } else {
+    				    echo "<div class='mobile-title'>$aOpen".df_escape($record->getTitle())."$aClose</div>";
+                    }
+    				echo "<div class='mobile-description'>$aOpen".df_escape($record->getDescription())."$aClose</div>";
+                    
+                    
+				    
                     $actions = $at->getActions(array('category'=>'list_row_actions', 'record'=>&$record));
                     if ( count($actions)>0){
                         echo ' <div class="mobile-row-actions">';
@@ -659,7 +754,7 @@ import(XFROOT.'Dataface/QueryTool.php');
                     
 
                     $actions = $at->getActions(array('category'=>'selected_result_actions'));
-                    if ( count($actions) > 0){
+                    if ( count($actions) > 0 and $this->listStyle != 'mobile'){
                         echo '<div id="selected-actions">'.df_translate('scripts.Dataface_ResultList.MESSAGE_WITH_SELECTED', "With Selected").': <ul class="selectedActionsMenu" id="result_list-selectedActionsMenu">';
                         foreach ($actions as $action){
                             $img = '';
@@ -694,7 +789,11 @@ END;
 			
 			$out = ob_get_contents();
 			ob_end_clean();
-		} else {
+		}
+        
+        if ($desktop) {
+            // Just to prevent from running twice.
+            // In actuality this is used for both mobile and desktop
 			if ( @$app->prefs['use_old_resultlist_controller'] ){
 				ob_start();
 				df_display(array(), 'Dataface_ResultListController.html');
@@ -703,8 +802,15 @@ END;
 			} else {
 				$out = '';
 			}
-			$out .= "<p style=\"clear:both\">".df_translate('scripts.GLOBAL.MESSAGE_NO_MATCH', "No records matched your request.")."</p>";
-		}
+            ob_start();
+            df_display([], 'xataface/actions/list/no_results_found.html');
+            $out .= ob_get_contents();
+            ob_end_clean();
+        }
+		
+
+		$out = '<div class="resultlist-parent ' . ($this->_resultSet->found()>0?'non-empty':'empty').'">'.$out.'</div>';
+		
  		
  		return $out;
  	}

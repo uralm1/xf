@@ -1,0 +1,246 @@
+body {
+    padding-bottom:40px;
+    background-color:transparent;
+}
+
+h1 {
+    margin-bottom: 10px;
+}
+
+.xf-filter-options {
+    position:fixed;
+    top:0;
+    left:0;
+    width:100%;
+    visibility:hidden;
+    background-color: transparent;
+    z-index:100;
+    padding-bottom: 40px;
+}
+
+.xf-filter-options.slidein {
+    visibility:visible;
+    left:0;
+}
+
+h1, h1 > span {
+    text-align:center;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+h1 {
+    padding-top: 20px;
+}
+
+.dialog-content {
+    background-color: white;
+    /*margin: 0 0 40px 0;*/
+    padding: 0 0 0 0;
+    height: 100%;
+    height: -webkit-calc(100% - 40px);
+    height: -moz-calc(100% - 40px);
+    height: calc(100% - 40px);
+    box-sizing:border-box;
+}
+
+.xf-buttons {
+    position:fixed;
+    height:40px;
+    bottom:0;
+    left:0;
+    right:0;
+    width:100%;
+    padding: 5px;
+    box-sizing:border-box;
+    z-index:200;
+    background-color:white;
+}
+
+.xf-buttons button {
+    background-color: rgb(10, 132, 255);
+    color:white;
+    width:100%;
+    display:block;
+    border:none;
+    border-radius: 5px;
+    font-size: 14px;
+    padding: 10px;
+    box-sizing:border-box;
+}
+
+ul, li {
+    list-style-type:none;
+    list-style-image:none;
+    padding:0;
+    margin:0;
+}
+
+
+li.xf-filter-field > a, ul.xf-filter-options-list > li, ul.xf-filter-vocabulary-list > li  {
+    text-decoration:none;
+    color: black;
+    font-size: 12px;
+    border-bottom: 1px solid #eaeaea;
+    display:block;
+    padding: 10px;
+    position:relative;
+    
+}
+
+li.xf-filter-field > a > i.material-icons {
+    position:absolute;
+    right: 10px;
+    top: 10px;
+    padding:0;
+    margin:0;
+    width: 20px;
+}
+
+span.xf-filter-option-count {
+    font-size: 75%;
+    color: #666;
+}
+
+.filter-top-right-buttons {
+    position: absolute;
+    right: 10px;
+    top: 15px;
+    padding: 0;
+    margin: 0;
+}
+
+.filter-top-right-buttons > button {
+    border:none;
+    color: rgb(10, 132, 255);
+    font-size: 8px;
+    background-color:transparent;
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+div.text-filter-options {
+    display:flex;
+    padding: 10px;
+    flex-wrap: wrap;
+}
+
+div.text-filter-input > i {
+    position:absolute;
+    margin: 5px;
+    padding:5px;
+}
+
+
+div.text-filter-input {
+    width:100%;
+    padding: 10px;
+    box-sizing:border-box;
+}
+div.text-filter-input > input {
+    width: 100%;
+    box-sizing:border-box;
+    padding-left: 30px;
+    
+}
+
+input.text-filter-option {
+    display:none;
+}
+input.text-filter-option + label {
+    background-color: #eaeaea;
+    border-radius: 20px;
+    padding: 5px 20px 5px 20px;
+    font-size: 10px;
+    color: #666;
+    flex-grow:1;
+    text-align:center;
+    margin: 2px;
+}
+
+input.text-filter-option:checked + label {
+    background-color: #ccc;
+    color: #333;
+}
+
+div.range-inputs {
+    display:flex;
+    box-sizing:border-box;
+    padding:10px;
+    margin:0;
+    width:100%;
+    flex-wrap: wrap;
+}
+
+div.range-inputs > * {
+    flex-grow: 1;
+    padding: 10px;
+    box-sizing: border-box;
+    position:relative;
+}
+
+div.range-inputs input {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+div.range-inputs > * > i.material-icons {
+    position:absolute;
+    top: 18px;
+    left: 15px;
+}
+
+div.range-inputs input.icon-input {
+    padding-left: 20px;
+}
+
+div.range-inputs > * > i.material-icons.clear-btn{
+    position:absolute;
+    left: auto;
+    right: 15px;
+    color: #cccccc;
+    
+}
+
+div.text-filter-input > i.material-icons.clear-btn {
+    position:absolute;
+    left: auto;
+    right: 10px;
+    color: #cccccc;
+}
+
+div.range-inputs > * > i.material-icons.clear-btn + input,
+div.text-filter-input > i.material-icons.clear-btn + input {
+    padding-right: 20px;
+}
+
+input[type='date'] {
+    padding:0;
+}
+
+div.keyword-search-wrapper {
+    position:relative;
+}
+
+div.keyword-search-wrapper > input.keyword-search-field {
+    width: 100%;
+    box-sizing:border-box;
+    padding-left: 20px;
+    padding-right: 20px;
+}
+
+div.keyword-search-wrapper > i.material-icons {
+    position:absolute;
+    top: 9px;
+    left: 5px;
+}
+
+div.keyword-search-wrapper > i.material-icons.clear-btn {
+    left: auto;
+    right: 5px;
+    color: #cccccc;
+}
+
+
+
+

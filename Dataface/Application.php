@@ -1340,6 +1340,20 @@ END
 	}
 
 
+    /**
+     * Returns the application version as reported in the version.txt file.  This only
+     * returns the build version, which is the 2nd component of the version in version.txt
+     * Value is returned as an int.
+     *
+     * If no version is supplied, this will return 0
+     * 
+     * @return int The application version number.
+     */
+    function getApplicationVersion() {
+        return df_get_file_system_version();
+        
+    }
+    
 	/**
 	 * @brief Get the mysql major version number of MySQL.
 	 * returns int
@@ -2414,6 +2428,9 @@ END
 		// Set up security filters
 		$query =& $this->getQuery();
 		$table = Dataface_Table::loadTable($query['-table']);
+        xf_script('xataface/actions/core.js');
+        // Ignore jquery because it is included in the head of the document
+        Dataface_JavascriptTool::getInstance()->ignore('jquery.packed.js');
 
 		if (@$this->_conf['using_default_action'] and $table->isSingleton()) {
 		    $query['-action'] = $this->_conf['default_browse_action'];
@@ -2439,7 +2456,8 @@ END
 			// Do whatever we need to do before the request is handled.
 			$applicationDelegate->beforeHandleRequest();
 		}
-
+        
+        
 
 
 		//$table->setSecurityFilter();
@@ -2474,6 +2492,9 @@ END
 		if ( !isset($this->prefs['disable_ajax_record_details']) ){
 			$this->prefs['disable_ajax_record_details'] = 1;
 		}
+        if (!isset($this->prefs['mobile_nav_style'])) {
+            $this->prefs['mobile_nav_style'] = 'hamburger';
+        }
 
 		if ( $query['-action'] == 'login_prompt' ) $this->prefs['no_history'] = 1;
 
@@ -2481,8 +2502,14 @@ END
 		if ( isset($applicationDelegate) and method_exists($applicationDelegate, 'getPreferences') ){
 			$this->prefs = array_merge($this->prefs, $applicationDelegate->getPreferences());
 		}
-		$this->prefs = array_map('intval', $this->prefs);
-
+        foreach ($this->prefs as $k=>$v) {
+            if ($v === '0') {
+                $this->prefs[$k] = 0;
+            } else if ($v === '1') {
+                $this->prefs[$k] = 1;
+            }
+        }
+		
 		// Check to make sure that this table hasn't been disallowed
 		$disallowed = false;
 		if ( isset($this->_conf['_disallowed_tables']) ){
@@ -2521,7 +2548,7 @@ END
 			);
 
 		}
-
+        
 
 		$actionTool = Dataface_ActionTool::getInstance();
 
@@ -2529,6 +2556,28 @@ END
 			//import('I18Nv2/I18Nv2.php');
      		//I18Nv2::autoConv();
      	//}
+
+        $record = $this->getRecord();
+        if ($record and $record->getTableAttribute('no_view_tab') and $query['-action'] == 'view') {
+            $relationshipActions = $record->table()->getRelationshipsAsActions();
+            $recordActions = $actionTool->getActions([
+                'record' => $record, 
+                'category' => 'record_tabs', 
+                'exclude' => 'edit view',
+                'actions' => $relationshipActions,
+                'with' => 'url'
+            ]);
+            
+            $recordActions = array_merge($recordActions, $relationshipActions);
+            if (count($recordActions) > 0) {
+                foreach ($recordActions as $recordAction) {
+
+                    header('Location: '.$recordAction['url']);
+                    exit;
+                }
+            }
+            
+        }
 
 		$params = array(
 			'table'=>$query['-table'],
@@ -3146,6 +3195,7 @@ END
 		$resultSet = $app->getResultSet();
 		if ( isset($context['record']) ) $record = $context['record'];
 		else $record = $app->getRecord();
+        $related_record = @$context['related_record'];
 
 		if ( isset($context['relationship']) ){
 			//$tableObj =& Dataface_Table::loadTable($table);
@@ -3204,6 +3254,25 @@ END
 
 
 
+    /**
+     * Gets a table attribute.  Table attributes are defined in the fields.ini file in the global
+     * scope.  They can be overridden in the delegate class via the attribute__attname methods.
+     * @since 3.0
+     */
+    function getTableAttribute($attname) {
+        $query = $this->getQuery();
+        $table = Dataface_Table::loadTable($query['-table']);
+        
+        $del = $table->getDelegate();
+        $method = 'attribute__'.$attname;
+        if ($del and method_exists($del, $method)) {
+            $out = $del->$method($this);
+            if (isset($out)) {
+                return $out;
+            }
+        }
+        return @$table->_atts[$attname];
+    }
 
 
 

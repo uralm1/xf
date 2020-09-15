@@ -1,0 +1,188 @@
+<!doctype html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" type="text/css" href="{$ENV.DATAFACE_URL|escape}/plone.css?v={$ENV.APPLICATION_VERSION}"/>
+    <link rel="stylesheet" type="text/css" href="{$ENV.DATAFACE_URL|escape}/css/xataface/actions/mobile_filter_dialog.css?v={$ENV.APPLICATION_VERSION}"/>
+</head>
+<body class='mobile-sort-dialog'>
+    <div class='filter-top-right-buttons'>
+        <button class='reset-filter-btn' onclick='resetFilters()'>Reset</button>
+    </div>
+    <h1>Filter</h1>
+    <ul class='xf-filter-form'>
+    <li class='xf-filter-field xf-filter-type-keyword'>
+        <div class='keyword-search-wrapper'>
+            <i class='material-icons'>search</i>
+            <i class='clear-btn material-icons'>cancel</i>
+            <input type="text" id="keyword-search-field" value="{$query|escape}" class='keyword-search-field'/>
+        </div>
+    </li>
+    {foreach from=$searchFields item=field}
+    <li class='xf-filter-field xf-filter-type-{$field.type|escape}'>
+        
+
+        {if $field.type == 'filter'}
+        <a href='javascript:void(0)' onclick='showOptions(this)'>
+            <i class='material-icons'>arrow_forward_ios</i>
+            <span class='xf-filter-label'>{$field.label|escape}</span>
+            <span class='xf-filter-value'>{if $field.valueLabel}: {$field.valueLabel|escape}{elseif $field.value}: : {$field.value|escape}{/if}</span>
+            
+        </a>
+        <div class='xf-filter-options' data-field='{$field.fieldDef.name}' data-filter-type='{$field.type|escape}'>
+            <div class='dialog-content'>
+                <h1><span>{$field.label|escape}</span></h1>
+                <ul class='xf-filter-options-list'>
+                    {foreach from=$field.options item=option}
+                    <li>
+                
+                        <input 
+                            class='filter-box'
+                            onclick='updateFilters(this);' 
+                            data-key='{$option.key|escape}' 
+                            type='checkbox' 
+                            id='{$field.name|escape}-option-{$option.key|escape}'
+                            {if $option.selected}checked{/if}/>
+                        <label for='{$field.name|escape}-option-{$option.key|escape}'>
+                            <span class='xf-filter-option-value'>{$option.value|escape}</span>
+                            {if $option.count}<span class='xf-filter-option-count'>({$option.count|escape})</span>{/if}
+                        </labeL>
+                    </li>
+                    {/foreach}
+                </ul>
+            </div>
+        </div>
+        {elseif $field.type == 'date-range'}
+        
+        {elseif $field.type == 'text'}
+        <a href='javascript:void(0)' onclick='showOptions(this)'>
+            <i class='material-icons'>arrow_forward_ios</i>
+            <span class='xf-filter-label'>{$field.label|escape}</span>
+            <span class='xf-filter-value'>{if $field.valueLabel}: {$field.valueLabel|escape}{elseif $field.value}: {$field.value|escape}{/if}</span>
+            
+        </a>
+        <div class='xf-filter-options' data-field='{$field.fieldDef.name}' data-filter-type='{$field.type|escape}'>
+            <div class='dialog-content'>
+                <h1><span>{$field.label|escape}</span></h1>
+                <div class='text-filter-input'>
+                    <i class='material-icons'>search</i>
+                    {if $field.inputType == 'text'}<i class='clear-btn material-icons'>cancel</i>{/if}
+                    <input type='{$field.inputType|escape}' 
+                        class='search-field' 
+                        value='{$field.value|escape}'
+                        {if $field.placeholder}placeholder='{$field.placeholder|escape}'{/if}
+                        {foreach from=$field.inputAttributes item=attVal key=attKey}
+                            {$attKey|escape}='{$attVal|escape}'
+                        {/foreach}
+                        />
+                </div>
+                <div class='text-filter-options'>
+                    <input type='radio' value='contains' class='text-filter-option' name='{$field.fieldDef.name}-text-filter-option' id='{$field.fieldDef.name}-text-filter-option-contains' {if !$field.searchSuffix and !$field.searchPrefix}checked{/if}/>
+                    <label for='{$field.fieldDef.name}-text-filter-option-contains'>Contains</label>
+                    
+                    <input type='radio' value='exact' class='text-filter-option' name='{$field.fieldDef.name}-text-filter-option' id='{$field.fieldDef.name}-text-filter-option-exact' {if $field.searchPrefix =='='}checked{/if}/>
+                    <label for='{$field.fieldDef.name}-text-filter-option-exact'>Exact</label>
+                    
+                    <input type='radio' value='startswith' class='text-filter-option' name='{$field.fieldDef.name}-text-filter-option' id='{$field.fieldDef.name}-text-filter-option-starts-with' {if $field.searchPrefix=='~' and $field.searchSuffix=='%'}checked{/if}/>
+                    <label for='{$field.fieldDef.name}-text-filter-option-starts-with'>Starts with</label>
+                    
+                    <input type='radio' value='endswith' class='text-filter-option' name='{$field.fieldDef.name}-text-filter-option' id='{$field.fieldDef.name}-text-filter-option-ends-with' {if $field.searchPrefix=='~%'}checked{/if}/>
+                    <label for='{$field.fieldDef.name}-text-filter-option-ends-with'>Ends with</label>
+                </div>
+            </div>
+        </div>
+        {elseif $field.type == 'checkbox'}
+    
+        {elseif $field.type == 'range' or $field.type == 'min' or $field.type == 'max'}
+        <a href='javascript:void(0)' onclick='showOptions(this)'>
+            <i class='material-icons'>arrow_forward_ios</i>
+            <span class='xf-filter-label'>{$field.label|escape}</span>
+            <span class='xf-filter-value'>{if $field.valueLabel}: {$field.valueLabel|escape}{elseif $field.value}: : {$field.value|escape}{/if}</span>
+            
+        </a>
+        <div class='xf-filter-options' data-field='{$field.fieldDef.name}' data-filter-type='{$field.type|escape}'>
+            <div class='dialog-content'>
+                <h1><span>{$field.label|escape}</span></h1>
+                {if $field.filterVocabulary}
+                <ul class='xf-filter-vocabulary-list'>
+                    {foreach from=$field.filterValuelist item=option}
+                    <li>
+                
+                        <input 
+                            class='filter-vocabulary-box'
+                            onclick='updateFilters(this);' 
+                            data-key='{$option.key|escape}'
+                            value='{$option.key|escape}' 
+                            type='radio' 
+                            name='{$field.name|escape}'
+                            id='{$field.name|escape}-option-{$option.name|escape}'
+                            {if $option.selected}checked{/if}
+                            data-option-value="{$option.value|escape}"
+                            />
+                        <label for='{$field.name|escape}-option-{$option.name|escape}'>
+                            <span class='xf-filter-option-value'>{$option.value|escape}</span>
+                            {if $option.count}<span class='xf-filter-option-count'>({$option.count|escape})</span>{/if}
+                        </labeL>
+                    </li>
+                    {/foreach}
+                </ul>
+                {/if}
+                <div class='range-inputs'>
+                    {if $field.type != 'max'}
+                    <div class='min-wrapper'>
+                        {if $field.minIcon}<i class='material-icons'>{$field.minIcon|escape}</i>{/if}
+                        {if $field.inputType == 'text'}<i class='clear-btn material-icons'>cancel</i>{/if}
+                        <input type='{$field.inputType|escape}' 
+                            class='range-min {if $field.minIcon}icon-input{/if}' 
+                            value='{$field.currentMinValue|escape}' 
+                            {if $field.minPlaceholder}placeholder='{$field.minPlaceholder|escape}'{/if}
+                            {foreach from=$field.minInputAttributes item=attVal key=attKey}
+                                {$attKey|escape}='{$attVal|escape}'
+                            {/foreach}
+                            />
+                        <span class='min-label'>Min.</span>
+                    </div>
+                    {/if}
+                    {if $field.type != 'min'}
+                    <div class='max-wrapper'>
+                        {if $field.maxIcon}<i class='material-icons'>{$field.maxIcon|escape}</i>{/if}
+                        {if $field.inputType == 'text'}<i class='clear-btn material-icons'>cancel</i>{/if}
+                        <input type='{$field.inputType|escape}' 
+                            class='range-max {if $field.maxIcon}icon-input{/if}' 
+                            value='{$field.currentMaxValue|escape}' 
+                            {if $field.maxPlaceholder}placeholder='{$field.maxPlaceholder|escape}'{/if}
+                            {foreach from=$field.maxInputAttributes item=attVal key=attKey}
+                                {$attKey|escape}='{$attVal|escape}'
+                            {/foreach}
+                            />
+                        <span class='max-label'>Max.</span>
+                    </div>
+                    {/if}
+                </div>
+            </div>
+        </div>
+    
+    
+        {elseif $field.type == 'checkbox'}
+    
+        {else}
+    
+    
+        {/if}
+
+    </li>
+    {/foreach}
+    </ul>
+    
+    <div class='xf-buttons'>
+        <button class='xf-apply-btn' onclick='applyFilters()'>Show <span class='num-results'>x</span> Results</button>
+    </div>
+    {if $relatedFilter}
+    <script>
+        window.relatedFilter=true;    
+    </script>
+    {/if}
+    <script src="{$ENV.DATAFACE_URL|escape}/js/xataface/actions/mobile_filter_dialog.js?v={$ENV.APPLICATION_VERSION}"></script>
+
+</body>
+    

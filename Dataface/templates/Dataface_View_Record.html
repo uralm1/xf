@@ -28,13 +28,61 @@
 		{record_view var=rv record=$record}
 		
 		{php}xf_script('jquery-ui.min.js');{/php}
-					
+		{foreach from=$rv->sections item=section}
+			{if $section.class == 'override'}
+			    {assign var="contentOverridden" value=1}
+				{define_slot name="`$section.name`_section_content"}
+				{if $section.content}
+					<div class="dataface-view-section">
+					{$section.content}
+					</div>
+				{elseif $section.fields}
+					<table class="record-view-table">
+					<tbody>
+					{foreach from=$section.fields item=field key=fieldname}
+						{if $field.visibility.browse != 'hidden'}
+							{if $section.record}
+								{assign var="field_value" value=$section.record->htmlValue($field.name)}
+							{else}
+								{assign var="field_value" value=$record->htmlValue($field.name)}
+							
+							{/if}
+							{if !empty($field_value)}
+								<tr><th class="record-view-label">
+										{if $field.label_link}<a href="{$field.label_link|escape}" target="_blank" class="field-label-link no-link-icon">{/if}
+											{$field.widget.label|escape}
+										{if $field.label_link}</a>{/if}
+									</th>
+									<td class="record-view-value">{$field_value}</td></tr>
+							{/if}
+						{/if}
+					{/foreach}
+					</tbody>
+					</table>
+				{elseif $section.records}
+					{glance_list records=$section.records}
+				{/if}
+				{/define_slot}
+
+			{/if}
+		
+		{/foreach}
+        
+		{if $contentOverridden}		
+			<div class="mobile mobile-record-actions">
+
+			    {actions_menu category="mobile_record_actions"}
+			</div>
+            <div class="mobile mobile-record-relationships">
+                {actions_menu category="__relationships__" navicon="arrow_forward_ios"}
+            </div>
+        {else}
 		<table width="100%">
 			{if !$rv->showLogo}
 			<tr>
 				
 				<td colspan="2" id="dataface-sections-top-column">
-					
+					{if false}
 					<div class="dataface-sections-top {if $ENV.prefs.hide_record_view_logo}dataface-sections-top-no-logo{/if}">
 						<h3 class="dataface-record-view-title">{$record->getTitle()|escape}</h3>
 						<script>{literal}
@@ -52,9 +100,10 @@
 
 						    {actions_menu category="mobile_record_actions"}
 						</div>
-
+                        
 						
 					</div>
+                    {/if}
 				</td>
 			</tr>
 			{/if}
@@ -196,6 +245,13 @@
 							<h3>{$record->getTitle()|escape}</h3>
 							<div class="dataface-view-description">{$rv->description}</div>
 							<div class="dataface-view-status">{$rv->status|escape}</div>
+                            
+    						
+                            <div class="mobile mobile-record-relationships">
+                                {actions_menu category="__relationships__" navicon="arrow_forward_ios"}
+                            </div>
+                            
+                            
 						</div>
 						{/if}
 						
@@ -335,7 +391,7 @@
 				</td>
 			</tr>
 		</table>
-		
+		{/if} {* contentOverridden *}
 			
 		{/define_slot}	
 		

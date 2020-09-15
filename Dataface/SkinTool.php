@@ -170,7 +170,9 @@ class Dataface_SkinTool extends Smarty{
 			'mode'=>&$app->_query['-mode'],
 			'language'=>$app->_conf['lang'],
 			'prefs'=>&$app->prefs,
-			'search'=>@$_REQUEST['-search']
+			'search'=>@$_REQUEST['-search'],
+            'APPLICATION_VERSION' => $app->getApplicationVersion(),
+            'BACK_LINK' => $this->getBackLink()
 
 		);
 
@@ -224,6 +226,7 @@ class Dataface_SkinTool extends Smarty{
 		$this->register_function('records', array(&$this, 'records'));
 		$this->register_function('form_context', array(&$this, 'form_context'));
         $this->register_function('cancel_back_button', array(&$this, 'cancel_back_button'));
+        $this->register_function('script', array(&$this, 'script'));
 		$this->register_block('translate', array(&$this, 'translate'));
 		$this->register_block('use_macro',array(&$this,'use_macro'));
 		$this->register_block('define_slot', array(&$this,'define_slot'));
@@ -259,6 +262,17 @@ class Dataface_SkinTool extends Smarty{
 		return $this->resultController;
 	}
     
+    function getBackLink() {
+        $app = Dataface_Application::getInstance();
+        $query = $app->getQuery();
+        
+        $referer = @$_SERVER['HTTP_REFERER'];
+        if ($referer and strpos($_SERVER['HTTP_REFERER'], df_absolute_url(DATAFACE_SITE_URL)) === 0) {
+            return 'javascript:window.history.back()';//$referer;
+        } else {
+            return df_absolute_url(DATAFACE_SITE_URL);
+        }
+    }
     
 	/**
      * Get the compile path for this resource.
@@ -551,19 +565,10 @@ class Dataface_SkinTool extends Smarty{
      * query.
      */
     function cancel_back_button($params, &$smarty) {
-        $referer = @$_SERVER['HTTP_REFERER'];
-        $href = "window.history.back()";
-        $onclick = $href;
-        $href = '#';
-        
-        if (!$referer or strpos($referer, df_absolute_url(DATAFACE_SITE_URL)) !== 0) {
-            $href = Dataface_Application::getInstance()->url('-action=browse');
-            $onclick = '';
-        }
-        $href = htmlspecialchars($href);
+        $href = $this->getBackLink();
         $html = <<<END
             <div class="cancel-back-button">
-                <a class="cancel-back-button" href="$href" onclick="$onclick"><i class="material-icons">clear</i></a>
+                <a class="cancel-back-button" href="$href"><i class="material-icons">clear</i></a>
             </div>
 END;
         return $html;
@@ -628,6 +633,11 @@ END;
 
 	}
 
+    function script($params, &$smarty) {
+        if (@$params['src']) {
+            xf_script($params['src']);
+        }
+    }
 
 	/**
 	 * Returns an associative array of actions matching the criteria.
@@ -641,10 +651,13 @@ END;
 		if ( !isset($params['var']) ) throw new Exception('actions: var is a required parameter.', E_USER_ERROR);
 		$varname = $params['var'];
 		unset($params['var']);
+        $firstOnly = @$params['first'];
+        unset($params['first']);
+        
 		import( XFROOT.'Dataface/ActionTool.php');
 		$actionTool =& Dataface_ActionTool::getInstance();
 		if ( !isset($params['record']) ){
-			$params['record'] =& $this->ENV['record'];
+            $params['record'] =& $this->ENV['record'];
 		}
 		$actions = $actionTool->getActions($params);
         foreach ($actions as $k=>$a) {
@@ -670,7 +683,17 @@ END;
 
 			}
         }
-		$context = array($varname=>$actions);
+        if ($firstOnly) {
+            $action = null;
+            foreach ($actions as $a) {
+                $action = $a;
+                break;
+            }
+            $context = array($varname=>$action);
+        } else {
+            $context = array($varname=>$actions);
+        }
+		
 		$smarty->assign($context);
 
 	}
@@ -678,8 +701,14 @@ END;
     private $statusClassesAddedToCSS = array();
 
 	function actions_menu($params, &$smarty){
-
+        
 		$context = array();
+        $navicon = null;
+        $record = null;
+        if (isset($params['navicon'])) {
+            $navicon = $params['navicon'];
+            unset($params['navicon']);
+        }
 		if ( isset( $params['id'] ) ) {
 			$context['id'] = $params['id'];
 			unset($params['id']);
@@ -739,19 +768,17 @@ END;
 
 		if ( isset( $params['actions'] ) ){
 			$addon_actions = & $params['actions'];
+            unset($params['actions']);
 		} else {
 			$addon_actions = null;
 		}
-
-
-
 
 		//$params['var'] = 'actions';
 		//$this->actions($params, $smarty);
 		//print_r($
 		import( XFROOT.'Dataface/ActionTool.php');
 		$actionTool =& Dataface_ActionTool::getInstance();
-		$actions = $actionTool->getActions($params);
+		$actions = count($params) > 0 ? $actionTool->getActions($params) : [];
 		if ( $addon_actions !== null ){
 			$p2 = $params;
 			unset($p2['category']);
@@ -763,7 +790,7 @@ END;
 		foreach ($actions as $k=>$a){
             if (@$a['hidden_status']) $statuses[] = $a['hidden_status'];
             if (@$a['visible_status']) $statuses[] = $a['visible_status'];
-                
+            if ($navicon) $actions[$k]['navicon'] = $navicon; 
             
 			if ( @$a['subcategory'] ){
 				$p2 = $params;
@@ -787,6 +814,28 @@ END;
 		//print_r($actions);
 		$context['actions'] =& $actions;
 		//$smarty->assign($context);
+        if (isset($params['mincount_class'])) {
+            $tmp = $params['mincount_class'];
+            $pos = strpos($tmp, ' ');
+            if ($pos !== false) {
+                $cnt = intval(substr($tmp, 0, $pos));
+                $cls = substr($tmp, $pos+1);
+                if ($cnt <= count($context['actions'])) {
+                    $context['class'] = trim(@$context['class'] .' '.$cls);
+                }
+            }
+        }
+        if (isset($params['maxcount_class'])) {
+            $tmp = $params['maxcount_class'];
+            $pos = strpos($tmp, ' ');
+            if ($pos !== false) {
+                $cnt = intval(substr($tmp, 0, $pos));
+                $cls = substr($tmp, $pos+1);
+                if ($cnt > count($context['actions'])) {
+                    $context['class'] = trim(@$context['class'] .' '.$cls);
+                }
+            }
+        }
 		if ( isset($params['mincount']) and intval($params['mincount']) > count($context['actions']) ) return;
 		if ( isset($params['maxcount']) and intval($params['maxcount']) < count($context['actions']) ){
 			$more = array(
@@ -816,6 +865,7 @@ END;
 			}
 			$existing['more'] = $more;
 			$context['actions'] = $existing;
+            
 		}
         
         
@@ -828,8 +878,12 @@ END;
         }
         //echo print_r($context);exit;
             
-        
-        
+        foreach ($context['actions'] as $actionDef) {
+            $context['class'] .= ' with-'.$actionDef['name'];
+        }
+        if ($record) {
+            $context['actionsRecordId'] = $record->getId();
+        }
 		$smarty->display($context, 'Dataface_ActionsMenu.html');
 
 	}
@@ -848,6 +902,7 @@ END;
 		$params2 = array();
 
 		$params['actions'] = $table->getRelationshipsAsActions($params2);
+
 		return $this->actions_menu($params, $smarty);
 
 	}

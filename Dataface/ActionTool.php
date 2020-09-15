@@ -169,6 +169,25 @@ class Dataface_ActionTool {
 		if ( !is_array($params) ){
 			trigger_error("In Dataface_ActionTool::getActions(), expected parameter to be an array but received a scalar: ".$params.".".Dataface_Error::printStackTrace(), E_USER_ERROR);
 		}
+        if (@$params['category']) {
+            $cats = $params['category'];
+            if (is_string($cats)) {
+                $pos = strpos($cats, '|');
+                if ($pos !== false) {
+                    $cats = array_map('trim', explode('|', $cats));
+                }
+                
+            }
+            if (is_array($cats)) {
+                $out = [];
+                foreach ($cats as $cat) {
+                    $params['category'] = $cat;
+                    $out = array_merge($out, $this->getActions($params, $actions));
+                }
+                return $out;
+            }
+        }
+        
 		$app =& Dataface_Application::getInstance();
 		
 		$out = array();
@@ -197,6 +216,19 @@ class Dataface_ActionTool {
 			}
 		}
 		
+        if (@$params['category'] == '__relationships__') {
+            // Special case.  The __relationships__ category will get the table's relationship as actions.
+            if (!$tablename) {
+                $query = $app->getQuery();
+                $tablename = $query['-table'];
+            }
+            $table = Dataface_Table::loadTable($tablename);
+            if (PEAR::isError($table)) {
+                throw new Exception("Cannot find table: ".$tablename);
+            }
+            return $table->getRelationshipsAsActions([]);
+        }
+        
 		if ( $tablename !== null ){
 			// Some actions are loaded from the table's actions.ini file and must be loaded before we return the actions.
 			$table =& Dataface_Table::loadTable($tablename);
@@ -217,11 +249,20 @@ class Dataface_ActionTool {
 			}
 			else $actions = $this->actions;
 		}
+        $excludes = null;
+        if (@$params['exclude']) {
+            $excludes = $params['exclude'];
+            if (is_string($excludes)) {
+                $excludes = explode(' ', $excludes);
+            }
+        }
 		foreach ( array_keys($actions) as $key ){
 			if ( isset($action) ) unset($action);
 			$action = $actions[$key];
 			$action['atts'] = array();
-			
+			if ($excludes and in_array($action['name'], $excludes)) {
+			    continue;
+			}
 			if ( @$params['name'] and @$params['name'] !== @$action['name']) continue;
 			if ( @$params['id'] and @$params['id'] !== @$action['id']) continue;
 			if ( @$params['withtags']) {
@@ -232,7 +273,7 @@ class Dataface_ActionTool {
             if (@$params['with']) {
                 $missingKey = false;
                 foreach (explode(' ', $params['with']) as $withKey) {
-                    if (!$action[$withKey]) {
+                    if (!@$action[$withKey]) {
                         $missingKey = true;
                         break;
                     }
@@ -312,13 +353,26 @@ class Dataface_ActionTool {
             $action['label'] = df_translate($keyBase.'label', @$action['label']);
             $action['description'] = df_translate($keyBase.'description', @$action['description']);
             $action['materialIcon'] = df_translate($keyBase.'materialIcon', @$action['materialIcon']);
+            if (@$action['ajax'] and !@$action['ajax_action']) {
+                $action['ajax_action'] = $action['name'];
+            }
+            if (@$action['ajax_action']) {
+        		xf_script('xataface/actions/ajax_action_client.js');
+                $removeClass = 'undefined';
+                if (@$action['ajax.on']) $removeClass = '\''.$action['ajax.on'].'\'';
+                $addClass = 'undefined';
+                if (@$action['ajax.off']) $addClass = '\''.$action['ajax.off'].'\'';
+                $action['onclick'] = 'xataface.post(\''.$action['ajax_action'].'\',this, '.$removeClass.', '.$addClass.')';
+                $action['url'] = 'javascript:void(0)';
                 
+                
+            }
             
 			$out[$key] =& $action;
 			
 			unset($action);
 		}
-		
+
 		uasort($out, array(&$this, '_compareActions'));
 		return $out;
 	}

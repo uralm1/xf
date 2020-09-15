@@ -19,7 +19,8 @@
  *}
 {define_slot name="actions_menu"}
 {if $actions|@count > 0}
-<ul {if $class}class="{$class|escape}"{/if} {if $id}id="{$id|escape}"{/if}>
+<ul {if $class}class="{$class|escape}"{/if} {if $id}id="{$id|escape}"{/if} data-actions-count="{$actions|@count}"
+    {if $actionsRecordId}xf-record-id="{$actionsRecordId|escape}"{/if}>
 	{block name="actions_menu_head"}
 {foreach item=action from=$actions key=name}
             {if $action.subcategory and !$action.subactions}
@@ -40,8 +41,11 @@
 				   {if $action.materialIcon}<i class="material-icons {$action.materialIconStyle|escape}">{$action.materialIcon|escape}</i>{/if}
 				   {if !$action.icon and !$action.materialIcon and $action.subactions}<i class="material-icons {$action.materialIconStyle|escape}">arrow_drop_down</i>{/if}
                    <span class="action-label">{$action.label|escape}</span>
-                  
+                   {if $action.navicon}
+                       <i class="material-icons navicon">{$action.navicon|escape}</i>
+                   {/if}
                 </a>
+                
                  {if $action.subactions}
 											
 					<ul class="action-sub-menu">
