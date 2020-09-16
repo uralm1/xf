@@ -313,7 +313,7 @@ class dataface_actions_new {
 		}
 		$context = array('form'=>&$out);
 		$context['tabs'] = $formTool->createHTMLTabs($currentRecord, $form, @$query['--tab']);
-		$context['new_record_header_label'] = 'Create new '.$currentTable->getSingularLabel();
+		$context['new_record_header_label'] = df_translate('actions.new.new_record_header_label', 'Create new ').$currentTable->getSingularLabel();
 		if (@$currentTable->_atts['new_record_label']) {
 			$context['new_record_header_label'] = $currentTable->_atts['new_record_label'];
 		}

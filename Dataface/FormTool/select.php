@@ -80,7 +80,7 @@ class Dataface_FormTool_select {
 							$jt->import('RecordDialog/RecordDialog.js');
 							//$suffix =  '<script type="text/javascript" src="'.DATAFACE_URL.'/js/jquery-ui-1.7.2.custom.min.js"></script>';
 							//$suffix .= '<script type="text/javascript" src="'.DATAFACE_URL.'/js/RecordDialog/RecordDialog.js"></script>';
-							$suffix = '<a href="#" onclick="return false" id="'.df_escape($field['name']).'-other">Other..</a>';
+							$suffix = '<a href="#" onclick="return false" id="'.df_escape($field['name']).'-other">'.df_translate('widget.select.other', 'Other..').'</a>';
 							$suffix .= '<script>
 							jQuery(document).ready(function($){
 								$("#'.$field['name'].'-other").each(function(){
