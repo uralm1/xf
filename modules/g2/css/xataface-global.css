@@ -3040,3 +3040,17 @@ td.master-detail-selected a {
   li.record-back i.material-icons {
     display:none;
   }
+
+
+.mobile-list-settings-wrapper {
+  display: none;
+}
+
+.no-results-found {
+  display: none;
+}
+
+.mobile {
+  display: none;
+}
+
