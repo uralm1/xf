@@ -354,9 +354,9 @@ class dataface_actions_new {
 		$context = array('form'=>&$out);
 		$context['tabs'] = $formTool->createHTMLTabs($currentRecord, $form, @$query['--tab']);
         if ($relationship) {
-    		$context['new_record_header_label'] = 'Add '.$relationship->getSingularLabel();
+    		$context['new_record_header_label'] = df_translate('actions.new_add.new_record_header_label', 'Add ').$relationship->getSingularLabel();
         } else {
-    		$context['new_record_header_label'] = 'Create new '.$currentTable->getSingularLabel();
+    		$context['new_record_header_label'] = df_translate('actions.new.new_record_header_label', 'Create new ').$currentTable->getSingularLabel();
         }
 		if (@$currentTable->_atts['new_record_label']) {
 			$context['new_record_header_label'] = $currentTable->_atts['new_record_label'];

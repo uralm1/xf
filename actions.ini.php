@@ -67,6 +67,7 @@
 [new]
 	label = "New Record"
 	breadcrumb_label="New"
+	breadcrumb_label_i18n = actions.new.breadcrumb_label
 	description = Create a new record
 	url = "{$this->url('-action=new', false)}"
 	materialIcon="add"
