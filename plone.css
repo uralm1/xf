@@ -127,7 +127,7 @@
 
 
 body {
-    font: 100% Arial,"Helvetica Neue",Helvetica,sans-serif;
+    font: 90% Roboto,Arial,"Helvetica Neue",Helvetica,sans-serif;
     background-color: var(--mainBgColor);
     color: var(--mainTextColor);
     margin: 0;
@@ -283,16 +283,15 @@ form {
     margin: 0;
 }
 textarea {
-    font: 110% "Courier New", Courier, monospace; 
+    font: 90% "Courier New", Courier, monospace; 
     border: 1px solid #8cacbb;  
     color: var(--mainTextColor);
     background-color: var(--mainBgColor);
     width: 100%;
 }
 input {
-    
     padding: 6px 8px;
-    font-size: 100%;
+    font-size: 90%;
     line-height: 20px;
     color: var(--inputTextColor);
     vertical-align: middle;
@@ -328,7 +327,7 @@ button.xf-submit-button {
 }
 td.Dataface_QuickForm-label-cell {
     padding: 8px;
-    line-height: 34px;
+    line-height: normal;
 }
 
 select {
@@ -1011,9 +1010,9 @@ input.searchButton {
 } 
 
 .formHelp {
-    font-size: 90%;
+    font-size: 70%;
     color: #76797c;
-    margin: 0 0 0.2em 0;
+    margin: 3px 0 0.2em 0;
 }
 
 .groupFormHelp {
@@ -4849,4 +4848,8 @@ img.xf-container-field {
 td.resultListCell img.xf-container-field {
 	max-width: 100px;
 	max-height: 100px;
+}
+
+.portletBody {
+  font-size: 80%;
 }
