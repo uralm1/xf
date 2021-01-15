@@ -1494,6 +1494,14 @@ END
 		return $this->queryTool;
 
 	}
+	
+	
+	function &getRecords() {
+		$rs =& $this->getResultSet();
+		$rs->loadSet();
+		$out = $rs->getRecordsArray();
+		return $out;
+	}
 
 	/**
 	 * @brief Gets the current record based on the current query.
@@ -2445,10 +2453,13 @@ END
 		    // For singleton tables search is pointless
 		    $this->_conf['_prefs']['show_search'] = 0;
 		}
-
+        
 		if (!@$query['-sort'] and @$table->_atts['default_sort']) {
 		    $query['-sort'] = $table->_atts['default_sort'];
 		}
+        if (@$query['-relationship'] and !@$query['-related:sort'] and @$table->_atts['default_sort.'.$query['-relationship']]) {
+            $query['-related:sort'] = $table->_atts['default_sort.'.$query['-relationship']];
+        }
 
 		$this->fireEvent('beforeHandleRequest');
 		$applicationDelegate = $this->getDelegate();

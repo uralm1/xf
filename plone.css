@@ -291,18 +291,18 @@ textarea {
 }
 input {
     
-        padding: 6px 8px;
-        font-size: 100%;
-        line-height: 20px;
-        color: var(--inputTextColor);
-        vertical-align: middle;
-        background-color: var(--inputBgColor);
-        background-repeat: no-repeat;
-        background-position: right 8px center;
-        border: 1px solid var(--inputBorderColor);
-        border-radius: 3px;
-        outline: none;
-        box-shadow: inset 0 1px 2px rgba(27,31,35,.075);
+    padding: 6px 8px;
+    font-size: 100%;
+    line-height: 20px;
+    color: var(--inputTextColor);
+    vertical-align: middle;
+    background-color: var(--inputBgColor);
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    border: 1px solid var(--inputBorderColor);
+    border-radius: 3px;
+    outline: none;
+    box-shadow: inset 0 1px 2px rgba(27,31,35,.075);
     
 }
 
@@ -310,6 +310,21 @@ input[type='submit'] {
     color: var(--submitButtonTextColor);
     background-color: var(--submitButtonBgColor);
     background-image: var(--submitButtonBgImage);
+}
+
+button.xf-submit-button {
+
+    color: var(--submitButtonTextColor);
+    background-color: var(--submitButtonBgColor);
+    background-image: var(--submitButtonBgImage);
+
+    box-sizing:border-box;
+    margin: 10px 0 10px 0;
+    padding: 15px;
+    border: 1px solid transparent;
+    border-radius: 3px;
+    cursor: pointer;
+    
 }
 td.Dataface_QuickForm-label-cell {
     padding: 8px;
@@ -2370,6 +2385,15 @@ ul.field_actions {
 	display: inline;
 }
 
+@media only screen and (max-width: 768px) {
+    
+    ul.field_actions  {
+        display:block;
+        margin-top: 2mm;
+
+    }
+}
+
 ul.field_actions li {
 	list-style-type: none;
 	list-style-image: none;
@@ -2927,6 +2951,23 @@ table.listing td.resultListCell.timestamp {
 	white-space: nowrap;
 }
 
+.xf-RecordBrowser-wrapper {
+    display:flex;
+    flex-direction:column;
+    height:100%;
+    overflow:auto;
+}
+.xf-RecordBrowser-select {
+    overflow:auto;
+}
+.xf-RecordBrowser-select-field {
+    width:100%;
+    height:100%;
+    overflow:auto;
+    
+    ;
+}
+
 .xf-RecordBrowser-button img,
 .xf-RecordBrowser-edit-button img {
     display: inline !important;
@@ -3472,6 +3513,24 @@ body.two-col #status-bar .responsive-content,
       padding: 15px;
   }
   
+  form.xataface-login-form.xf-email-login div.login-with-password {
+      display:none;
+  }
+  form.xataface-login-form.xf-password-login div.login-with-email {
+      display:none;
+  }
+  
+  form.xataface-login-form.xf-password-login div.login-with-email-button-wrapper {
+      text-align:center;
+  }
+  form.xataface-login-form .login-with-email, form.xataface-login-form .login-with-password {
+      margin-bottom: 2em;
+  }
+  
+  #Login-with-email-button, #Login-with-password-button {
+      cursor: pointer;
+  }
+  
   div.cancel-back-button {
       position:fixed;
       background-color: #eaeaea;
@@ -3692,7 +3751,8 @@ body.two-col #status-bar .responsive-content,
   
   
   
-      .mobile-logo img {
+      .mobile-logo img,
+      .mobile-logo img.xf-container-field {
           max-width: 50px;
           max-height: 50px;
           float:left;
@@ -3746,6 +3806,8 @@ body.two-col #status-bar .responsive-content,
   
   
   @media only screen and (max-width: 768px) {
+      
+      
       .desktop {
           display:none !important;
       }
@@ -4140,6 +4202,47 @@ body.two-col #status-bar .responsive-content,
     nav.table_tabs_mobile > ul > li.selected > a > i  {
         color: var(--mobileTabIconSelectedColor);
     }
+
+    nav.table_tabs_mobile ul li ul {
+        background: var(--menuBgColor);
+        visibility: hidden;
+      opacity: 0;
+      min-width: 5rem;
+        position: fixed;
+      transition: all 0.5s ease;
+        
+        bottom:5.2rem;
+        left: 0;
+        right:0;
+      display: none;
+      border-top: 1px solid var(--menuBorderColor);
+    }
+  
+    nav.table_tabs_mobile ul li:focus-within > ul,
+    nav.table_tabs_mobile ul li ul:hover,
+    nav.table_tabs_mobile ul li ul:focus {
+      visibility: visible;
+      opacity: 1;
+      display: block;
+      margin:0
+      
+    }
+  
+    nav.table_tabs_mobile ul li ul li {
+        clear: both;
+      width: 100%;
+      display:block;
+      text-align:center;
+      border:none;
+      color: var(--menuColor);
+      
+    }
+    
+    nav.table_tabs_mobile ul li ul li a {
+        border:none;
+        color: var(--menuColor);
+    }
+    
 
     .dataface-record-title {
         display:none;
@@ -4609,6 +4712,7 @@ div.mobile-list-settings-wrapper.active {
     margin-right:30px;
 }
 
+
 @media only screen and (max-width:768px) {
     .mobile-overflow-menu {
         position:absolute;
@@ -4735,4 +4839,14 @@ div.no-matches-menu ul li a > i {
 
 .external-link-preview .external-link-title {
     display:block;
+}
+
+img.xf-container-field {
+	max-width: 50vw;
+	max-height: 100vh;
+}
+
+td.resultListCell img.xf-container-field {
+	max-width: 100px;
+	max-height: 100px;
 }

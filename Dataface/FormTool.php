@@ -232,7 +232,7 @@ class Dataface_FormTool {
 		}
 
 		$value = $this->pushValue($record, $field, $form, $element, $metaValues);
-
+		
 
         
 		$params = array();
@@ -261,9 +261,6 @@ class Dataface_FormTool {
 
 
 		if ( !$table->isMetaField($field['name']) ){
-
-
-
 			/*
 			 *
 			 * A MetaField is a field that should not be updated on its own merit.
@@ -292,7 +289,11 @@ class Dataface_FormTool {
 		 * If this field has any meta fields, then we will set them now.
 		 *
 		 */
+		
 		foreach ($metaValues as $key=>$value){
+			if (!isset($value)) {
+				continue;
+			}
 			$res = $record->setValue($key, $value);
 			if ( PEAR::isError($res) ){
 				$res->addUserInfo(
@@ -306,8 +307,6 @@ class Dataface_FormTool {
 
 			}
 		}
-
-
 
 	}
 
@@ -437,6 +436,21 @@ class Dataface_FormTool {
 
 	}
 
+    private function expandAjaxPreview(&$field) {
+        if (@$field['ajax_preview']) {
+            $preview = $field['ajax_preview'];
+            $prefix = 'field:';
+            $len = strlen($prefix);
+            if (strlen($preview) > $len and substr($preview, 0, $len) == $prefix) {
+                list($pre, $fieldName) = explode(':', $preview);
+                $app = Dataface_Application::getInstance();
+                $url = $app->url('-action=xf_field_preview&-field='.urlencode($fieldName)).'&--trigger={'.$fieldName.'}';
+                $field['ajax_preview'] = $url;
+                //print_r($field['ajax_preview']);
+            }
+        }
+    }
+
 	/**
 	 * @brief Builds a widget that can be added to a form.  This will delegate
 	 * to the WidgetHandler::buildWidget() method if defined for the field's widget
@@ -479,6 +493,7 @@ class Dataface_FormTool {
 		if ( PEAR::isError($el) ){
 			throw new Exception($el->toString(), E_USER_ERROR);
 		}
+        $this->expandAjaxPreview($field);
 		$el->setFieldDef($field);
 		if ( isset( $record ) && $record && $record->_table->hasField($field['name']) ){
 			if ( $link = $record->getLink($field['name']) ){
