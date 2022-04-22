@@ -29,7 +29,7 @@
 import(XFROOT.'Dataface/Table.php');
 class Dataface_AuthenticationTool {
     
-    const TOKEN_TABLE = 'dataface__login_tokens';
+    const TOKEN_TABLE = 'dataface__login_tokens_v2';
 
 	var $authType = 'basic';
 
@@ -133,7 +133,7 @@ class Dataface_AuthenticationTool {
 				DATAFACE_PATH.'/modules/Auth/'.$module.'/'.$module.'.php'
 				);
 			foreach ( $module_path as $path ){
-				if ( is_readable($path) ){
+				if ( xf_is_readable($path) ){
 					import($path);
 					$classname = 'dataface_modules_'.$module;
 					$this->delegate = new $classname;
@@ -243,7 +243,7 @@ class Dataface_AuthenticationTool {
         
         // We need to verify the username
         if ($this->usernameColumn) {
-            $res = xf_db_query("select count(*) from `".$this->usersTable."` where `".$this->usernameColumn."` LIKE '".addslashes($username)."'", df_db());
+            $res = xf_db_query("select count(*) from `".$this->usersTable."` where `".$this->usernameColumn."` = '".addslashes($username)."'", df_db());
             if (!$res) {
                 $id = df_error_log("SQL error: ".xf_db_error(df_db()));
                 throw new Exception("SQL error checking users table: ".$id);
@@ -256,7 +256,7 @@ class Dataface_AuthenticationTool {
                 if (!$this->getEmailColumn()) {
                     return false;
                 }
-                $res = xf_db_query("select count(*) from `".$this->usersTable."` where `".$this->getEmailColumn()."` LIKE '".addslashes($username)."'", df_db());
+                $res = xf_db_query("select count(*) from `".$this->usersTable."` where `".$this->getEmailColumn()."` = '".addslashes($username)."'", df_db());
                 list($num) = xf_db_fetch_row($res);
                 xf_db_free_result($res);
                 if (intval($num) !== 1) {
@@ -267,7 +267,7 @@ class Dataface_AuthenticationTool {
         
         
         if (!self::table_exists(self::TOKEN_TABLE)) {
-            $sql = "CREATE TABLE `dataface__login_tokens` ( `token_id` BIGINT(20) NOT NULL AUTO_INCREMENT , `username` VARCHAR(100) NOT NULL , `token` CHAR(36) NOT NULL , `expires` DATETIME NOT NULL, `redirect_url` TEXT, PRIMARY KEY (`token_id`)) ENGINE = MyISAM;";
+            $sql = "CREATE TABLE `".self::TOKEN_TABLE."` ( `token_id` BIGINT(20) NOT NULL AUTO_INCREMENT , `username` VARCHAR(100) NOT NULL , `token` CHAR(36) NOT NULL , `expires` DATETIME NOT NULL, `redirect_url` TEXT, `autologin` TINYINT(1), PRIMARY KEY (`token_id`)) ENGINE = MyISAM;";
             $res = xf_db_query($sql, df_db());
             if (!$res) {
                 throw new Exception("SQL error creating tokens table: ".xf_db_error(df_db()));
@@ -278,8 +278,9 @@ class Dataface_AuthenticationTool {
         
         
         $tok = df_uuid();
+        $autologin = (@$this->conf['autologin'] and @$_REQUEST['--remember-me']) ? 1 : 0;
         
-        $res = xf_db_query("INSERT INTO `".self::TOKEN_TABLE."` (`username`, `token`, `expires`, `redirect_url`) VALUES ('".addslashes($username)."', '".addslashes($tok)."', NOW() + INTERVAL 10 MINUTE, '".addslashes($redirectUrl)."')", df_db());
+        $res = xf_db_query("INSERT INTO `".self::TOKEN_TABLE."` (`username`, `token`, `expires`, `redirect_url`, `autologin`) VALUES ('".addslashes($username)."', '".addslashes($tok)."', NOW() + INTERVAL 10 MINUTE, '".addslashes($redirectUrl)."', $autologin)", df_db());
         if (!$res) {
             $id = df_error_log(xf_db_error(df_db()));
             throw new Exception("SQL error inserting token: ".$id);
@@ -300,24 +301,26 @@ class Dataface_AuthenticationTool {
 			$username = (isset($_REQUEST['UserName']) ? $_REQUEST['UserName'] : null);
 			$password = (isset($_REQUEST['Password']) ? $_REQUEST['Password'] : null);
             $token = (isset($_REQUEST['--token']) ? $_REQUEST['--token'] : null);
-            
             if (isset($token)) {
                 $tokenTable = self::TOKEN_TABLE;
                 if (self::table_exists($tokenTable)) {
                     $res = xf_db_query("delete from `".$tokenTable."` where expires < NOW()", df_db());
                     
-                    $res = xf_db_query("select `username` from `".$tokenTable."` where `token` LIKE '".addslashes($token)."'", df_db());
+                    $res = xf_db_query("select `username`, `autologin` from `".$tokenTable."` where `token` = '".addslashes($token)."'", df_db());
                     if (!$res) {
                         throw new Exception("SQL error checking token");
                     }
-                    list($username) = xf_db_fetch_row($res);
+                    list($username, $autologin) = xf_db_fetch_row($res);
+                    if ($autologin and @$this->conf['autologin']) {
+                        $_REQUEST['--remember-me'] = 1;
+                    }
                     xf_db_free_result($res);
                 } 
             }
             if ($username and self::is_email_address($username) and $this->usersTable and $this->getEmailColumn()) {
                 // The username could be an email address
                 // If the username doesn't exist, then we can check the email column
-                $res = xf_db_query("select count(*) from `".$this->usersTable."` where `".$this->usernameColumn."` LIKE '".addslashes($username)."'", df_db());
+                $res = xf_db_query("select count(*) from `".$this->usersTable."` where `".$this->usernameColumn."` = '".addslashes($username)."'", df_db());
                 if (!$res) {
                     throw new Exception("SQL failure checking for username");
                 }
@@ -326,7 +329,7 @@ class Dataface_AuthenticationTool {
                 if ($numUsernames == 0) {
                     // No usernames found
                     // Let's try to find an email address.
-                    $res = xf_db_query("select `".$this->usernameColumn."` from `".$this->usersTable."` where `".$this->getEmailColumn()."` LIKE '".addslashes($username)."'", df_db());
+                    $res = xf_db_query("select `".$this->usernameColumn."` from `".$this->usersTable."` where `".$this->getEmailColumn()."` = '".addslashes($username)."'", df_db());
                     if (!$res) {
                         throw new Exception("SQL failure checking email address");
                     }
@@ -372,14 +375,14 @@ class Dataface_AuthenticationTool {
                 if (self::table_exists($tokenTable)) {
                     $res = xf_db_query("delete from `".$tokenTable."` where expires < NOW()", df_db());
                     
-                    $res = xf_db_query("select COUNT(*) from `".$tokenTable."` where `token` LIKE '".addslashes($creds['Token'])."'", df_db());
+                    $res = xf_db_query("select COUNT(*) from `".$tokenTable."` where `token` = '".addslashes($creds['Token'])."'", df_db());
                     if (!$res) {
                         throw new Exception("SQL error checking token");
                     }
                     list($numTokens) = xf_db_fetch_row($res);
                     xf_db_free_result($res);
                     
-                    xf_db_query("delete from `".$tokenTable."` where `token` LIKE '".addslashes($creds['Token'])."'", df_db());
+                    xf_db_query("delete from `".$tokenTable."` where `token` = '".addslashes($creds['Token'])."'", df_db());
                     if (intval($numTokens) === 1) {
                         return true;
                     }
@@ -444,6 +447,20 @@ class Dataface_AuthenticationTool {
 			return true;
 		}
 	}
+    
+    /**
+     * Checks if the user has a password set.  Users might not have a password set if they 
+     * have never used password login - e.g. if they use email login or CAS login or some 
+     * other mechanism that doesn't require username/password comparison.
+     * @return boolean True ifthe user has a password.
+     */
+    function userHasPassword() {
+        $user = $this->getLoggedInUser();
+        if ($user) {
+            return $user->getLength($this->passwordColumn) > 0;
+        }
+        return false;
+    }
 
     /**
      * Creates a session token.
@@ -475,7 +492,11 @@ class Dataface_AuthenticationTool {
 		
 		if ( isset( $_REQUEST['-action'] ) and $_REQUEST['-action'] == 'logout' ){
 			$app->startSession();
-			// the user has invoked a logout request.
+			// the user has invoked a logout request.'
+            if (@$this->conf['autologin']) {
+                $app->clearAutologinCookie();
+            }
+            
 			
 			if ( isset($appdel) and method_exists($appdel, 'before_action_logout' ) ){
 				$res = $appdel->before_action_logout();
@@ -518,6 +539,9 @@ class Dataface_AuthenticationTool {
 			
 			$json = @$_REQUEST['--no-prompt'];
 			$app->startSession();
+            
+            
+            
 			if ( $this->isLoggedIn() ){
 				if ($json) {
 					df_write_json(array(
@@ -585,6 +609,16 @@ class Dataface_AuthenticationTool {
 			// If we are this far, then the login worked..  We will store the 
 			// userid in the session.
 			$_SESSION['UserName'] = $creds['UserName'];
+            
+            
+            if (@$_SESSION['UserName'] and @$this->conf['autologin'] and @$_REQUEST['--remember-me']) {
+                // User is logged in, and autologin is enabled in the app.
+                // We should check if the token is currently set
+                $token = df_uuid();
+                $app->insertAutologinToken($token);
+                setcookie($app->getAutologinCookieName(), $token, time() + (10 * 365 * 24 * 60 * 60)); // 10 years
+                
+            }
 			
 			if ($json) {
 				df_write_json(array(
@@ -705,7 +739,7 @@ class Dataface_AuthenticationTool {
 				$_SESSION['-redirect'] = $referer;
 			}
 		}
-		header("Location: $url");
+		$app->redirect("$url");
 		exit;
 		//df_display(array('msg'=>$msg, 'redirect'=>@$_REQUEST['-redirect']), 'Dataface_Login_Prompt.html');
 	
@@ -725,6 +759,10 @@ class Dataface_AuthenticationTool {
 		if ( !$this->isLoggedIn() ) return $null;
 		static $user = 0;
 		if ( $user === 0 ){
+            if (!$this->usersTable) {
+                $user = null;
+                return $user;
+            }
 			$user = df_get_record($this->usersTable, array($this->usernameColumn => '='.$_SESSION['UserName']));
 			if ( !$user ){
 				$user = new Dataface_Record($this->usersTable, array($this->usernameColumn => $_SESSION['UserName']));

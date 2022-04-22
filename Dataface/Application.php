@@ -272,15 +272,25 @@ END;
 				$filePath = $p.DIRECTORY_SEPARATOR.$name.DIRECTORY_SEPARATOR.$name.'.uilib.html';
 				//echo "Filepath: $filePath;";
 				//echo "BaseUrl: $baseUrl;";
-				if (file_exists($filePath)) {
+				if ((XF_USE_OPCACHE and xf_opcache_is_script_cached($filePath)) or file_exists($filePath)) {
 
 					$fileUrl = $baseUrl .
 						substr($filePath, strlen($basePath));
 					$fileUrl = str_replace(DIRECTORY_SEPARATOR, '/', $fileUrl);
 					$libRoot = substr($fileUrl, 0, strrpos($fileUrl, '/'));
-					$content = file_get_contents($filePath);
-					$content = str_replace('{{LIBROOT}}', $libRoot, $content);
-					$this->addHeadContent($content);
+                    
+                    if (XF_USE_OPCACHE and xf_opcache_is_script_cached($filePath)) {
+                        include(xf_opcache_path($filePath));
+                        list($content) = $xf_opcache_export;
+                    } else {
+    					$content = file_get_contents($filePath);
+    					$content = str_replace('{{LIBROOT}}', $libRoot, $content);
+    					$this->addHeadContent($content);
+                        if (XF_USE_OPCACHE) {
+                            xf_opcache_cache_array($filePath, [$content]);
+                        }
+                    }
+					
 					return true;
 				}
 
@@ -669,25 +679,62 @@ END;
 		}
 		$this->_baseUrl  = $_SERVER['PHP_SELF'];
 		if ( !is_array($conf) ) $conf = array();
+        
         $configPath = DATAFACE_SITE_PATH.'/conf.ini.php';
-        if (!is_readable($configPath)) {
-            $configPath = DATAFACE_SITE_PATH.'/conf.ini';
-        }
-		if ( is_readable($configPath) ){
-			$conf = array_merge(parse_ini_file($configPath, true), $conf);
-			if ( @$conf['__include__'] ){
-				$includes = array_map('trim',explode(',', $conf['__include__']));
-				foreach ($includes as $i){
-                                        
-					if ( is_readable($i) ){
-						$conf = array_merge($conf, parse_ini_file($i, true));
-					} else if ( is_readable($i.'.php') ){
-						$conf = array_merge($conf, parse_ini_file($i.'.php', true));
-					}
-				}
-			}
-		}
+        $configOpcacheKey = $configPath;
 
+        if (XF_USE_OPCACHE and xf_opcache_is_script_cached($configOpcacheKey)) {
+            include(xf_opcache_path($configOpcacheKey));
+            $conf = $xf_opcache_export;
+        } else {
+            if (!is_readable($configPath)) {
+                $configPath = DATAFACE_SITE_PATH.'/conf.ini';
+            }
+    		if ( is_readable($configPath) ){
+    			$conf = array_merge(parse_ini_file($configPath, true), $conf);
+    			if ( @$conf['__include__'] ){
+    				$includes = array_map('trim',explode(',', $conf['__include__']));
+    				foreach ($includes as $i){
+                        if (!$i) continue;
+                        
+                        $lastChar = substr($i, -1);
+                        $optional = false;
+                        if ($lastChar == '?') {
+                            $optional = true;
+                            $i = substr($i, 0, -1);
+                        }
+                        if (strpos($i, '{host}') !== false) {
+                            $host = $_SERVER['HTTP_HOST'];
+                            $port = '80';
+                            if (@$_SERVER['PORT']) {
+                                $port = $_SERVER['PORT'];
+                            }
+                            $colonPos = strpos($host, ':');
+                            if ($colonPos !== false) {
+                                $port = substr($host, $colonPos+1);
+                                $host = substr($host, 0, $colonPos);
+                            }
+                            $port = intval($port);
+                            $i = str_replace('{host}', preg_replace('/[^0-9a-zA-Z\.\-]/','', basename($host)), $i);
+                            $i = str_replace('{port}', $port, $i);
+                        }
+                        
+    					if ( is_readable($i) ){
+    						$conf = array_merge($conf, parse_ini_file($i, true));
+    					} else if ( is_readable($i.'.php') ){
+    						$conf = array_merge($conf, parse_ini_file($i.'.php', true));
+    					} else if (!$optional) {
+    					    throw new Exception("Include directive $i not satisifed.  Cannot find the file $i");
+    					}
+    				}
+    			}
+    		}
+            if (XF_USE_OPCACHE) {
+                xf_opcache_cache_array($configOpcacheKey, $conf);
+            }
+            
+        }
+        
 
 
 		if ( !isset( $conf['_tables'] ) ){
@@ -725,7 +772,7 @@ END;
 				// this might break old apps.
 				$dbinfo['driver'] = 'mysqli';
 			}
-			require_once 'xf/db/drivers/'.basename($dbinfo['driver']).'.php';
+			require_once XFROOT.'xf/db/drivers/'.basename($dbinfo['driver']).'.php';
 			//if ( @$dbinfo['persistent'] ){
 			//	$this->_db = xf_db_pconnect( $dbinfo['host'], $dbinfo['user'], $dbinfo['password'] );
 			//} else {
@@ -820,6 +867,8 @@ END;
 				$this->_conf['languages'][$lang_code] = $lang_code;
 			}
 		}
+        
+        
 
 		if ( @$this->_conf['support_transactions'] ){
 			// We will support transactions
@@ -1134,7 +1183,10 @@ END;
 
 		$this->rawQuery = $query;
 
-		if ( !isset( $query['-table'] ) ) $query['-table'] = $this->_conf['default_table'];
+		if ( !isset( $query['-table'] ) ) {
+		    $query['-table'] = $this->_conf['default_table'];
+            $this->_conf['using_default_table'] = true;
+		}
 		$this->_currentTable = $query['-table'];
 
 
@@ -1367,20 +1419,33 @@ END
 	}
 
 	function getPageTitle($mode='desktop'){
+        $out = '';
 		if ( isset($this->pageTitle) ){
-			return $this->pageTitle;
+			$out = $this->pageTitle;
 		} else {
-			$title = $mode == 'mobile' ? '' : $this->getSiteTitle();
+			
 			$query =& $this->getQuery();
+			if (@$this->_conf['using_default_table'] and @$this->_conf['using_default_action']) {
+			    return $this->getSiteTitle();
+			}
 			if ( ($record = $this->getRecord()) && $query['-mode'] == 'browse'  ){
-                return $record->getTitle().($title?(' - '.$title):'');
+                $out = $record->getTitle();
             } else {
                 $tableLabel = Dataface_Table::loadTable($query['-table'])->getLabel();
-                return $tableLabel.($title?(' - '.$title):'');
+                $out = $tableLabel;
 
             }
 		}
+        $textLength = strlen($out);
+        $maxChars = 32;
+        if ($textLength > $maxChars) {
+            $out = substr_replace($out, '...', $maxChars/2, $textLength-$maxChars);
+        }
+        
+        return $out;
 	}
+    
+    
 
 	function setPageTitle($title){
 		$this->pageTitle = $title;
@@ -1412,6 +1477,28 @@ END
 
 	}
 
+
+    function getPageMenuCategory() {
+        if (@$this->_conf['page_menu_category']) {
+            return $this->_conf['page_menu_category'];
+        }
+        $query = $this->_query;
+        $action = $query['-action'];
+        if ($action == 'list') {
+            return 'table_actions_menu';
+        } else if ($action == 'view' and @$query['-mode'] == 'browse') {
+            return 'record_actions_menu';
+        }
+        return $query['-action'] . '_actions_menu';
+        /*
+        if (@$query['-mode'] == 'browse') {
+            return 'record_actions_menu';
+        } else {
+            return 'table_actions_menu';
+        }
+        */
+        
+    }
 
 	// @}
 	// END CONFIGURATION
@@ -1790,7 +1877,7 @@ END
 	 * to not rack up huge amounts of Session files unnecessarily.
 	 *
 	 * @see disableSessions()
-	 * @see sessionsEnabled()
+	 * @see sessionEnabled()
 	 */
 	function enableSessions(){
 		setcookie($this->sessionCookieKey, 1, 0, DATAFACE_SITE_URL);
@@ -1818,6 +1905,10 @@ END
 	 * @see startSession()
 	 */
 	function sessionEnabled(){
+        if (@$this->_conf['_auth'] and @$this->_conf['_auth']['autologin'] and @$_COOKIE[$this->getAutologinCookieName()]) {
+            // If autologin is enabled and the user has logged in, then sessions are enabled.
+            return true;
+        }
 		return @$_COOKIE[$this->sessionCookieKey] or $this->getBearerToken() !== null;
 	}
 
@@ -1855,6 +1946,97 @@ END
 		}
 		return null;
 	}
+    
+    /**
+     * Creates the autologin table.
+     */
+    private function createAutologinTable() {
+        $createSql = "create table dataface__autologin (`username` varchar(100) NOT NULL, `token` varchar(36) NOT NULL PRIMARY KEY) Engine MyISAM";
+        $res = xf_db_query($createSql, df_db());
+        if (!$res) {
+            error_log("Failed to create autologin table: ". xf_db_erorr(df_db()));
+            throw new Exception("Failed to create autologin table.");
+        }
+    }
+    
+    /**
+     * Inserts an autologin token into the autologins table.
+     */
+    public function insertAutologinToken($token, $tryCreateTableOnFail = true) {
+        $insertSql = "replace into dataface__autologin (`username`,`token`) values ('".addslashes($_SESSION['UserName'])."', '".$token."')";
+        $res = xf_db_query($insertSql, df_db());
+        if (!$res) {
+            if ($tryCreateTableOnFail) {
+                $this->createAutologinTable();
+                $this->insertAutologinToken($token, false);
+            } else {
+                error_log("Failed to insert autologin token for user ".$_SESSION['UserName'].' due to SQL error: '.xf_db_error(df_db()));
+                throw new Exception("Failed to insert autologin token due to SQL error");
+            }
+        }
+    }
+    
+    /**
+     * Get the username for the given autologin token.
+     */
+    private function getAutologinUserForToken($token) {
+        
+        $res = xf_db_query("select username from dataface__autologin where token='".addslashes($token)."' limit 1", df_db());
+        if ($res) {
+            if ($row = xf_db_fetch_row($res)) {
+                return $row[0];
+            }
+            xf_db_free_result($res);
+        } 
+        return null;
+         
+    }
+    
+    
+    /**
+     * Removes the current autologin cookie.  Generally called when logging out.
+     */
+    public function clearAutologinCookie() {
+        $cookieName = $this->getAutologinCookieName();
+        $token = @$_COOKIE[$cookieName];
+        if ($token) {
+            $res = xf_db_query("delete from dataface__autologin where token='".addslashes($token)."' limit 1", df_db());
+            if (!$res) {
+                error_log("Failed to delete autologin cookie due to sql error: ".xf_db_error(df_db()));
+                
+            }
+            unset($_COOKIE[$cookieName]);
+            setcookie($cookieName, '', -1);
+        }
+        if (@$_SESSION['UserName']) {
+            if (@$this->_conf['_auth'] and @$this->_conf['_auth']['autologin.logout_all_devices']) {
+                $res = xf_db_query("delete from dataface_autologin where username = '".addslashes($_SESSION['UserName'])."'", df_db());
+                if (!$res) {
+                    error_log("Failed ot delete autologin tokens for user ".$_SESSION['UserName'].": ". xf_db_error(df_db()));
+                    throw new Exception("Failed to delete tokens due to SQL error");
+                }
+            }
+        }
+        
+        
+    }
+    
+    /**
+     * Gets the cookie named used for autologin.
+     * 
+     * Default is xf_pulse, but can be overridden with the autologin_cookie conf.ini property in the _auth section.
+     */
+    public function getAutologinCookieName() {
+        $conf = @$this->_conf['_auth'];
+        if (!$conf) {
+            $conf = [];
+        }
+        $cookieName = 'xf_pulse';
+        if (@$conf['autologin_cookie']) {
+            $cookieName = $conf['autologin_cookie'];
+        }
+        return $cookieName;
+    }
 
 	/**
 	 * @brief Starts a session if one does not already exist.  If you are writing code
@@ -1974,9 +2156,23 @@ END
 				if ( @$conf['session_name'] ) session_name($conf['session_name']);
 				//echo "Starting session with ".session_name();
 				session_start();	// start the session
+                
 				if (defined('REQUEST_PUBLIC_URL_USERNAME')) {
 					$_SESSION['UserName'] = REQUEST_PUBLIC_URL_USERNAME;
 				}
+                if (!@$_SESSION['UserName'] and @$conf['autologin']) {
+                    
+                    $autologinCookieVal = @$_COOKIE[$this->getAutologinCookieName()];
+                    if ($autologinCookieVal) {
+                        $foundUser = $this->getAutologinUserForToken($autologinCookieVal);
+                        if ($foundUser) {
+                            $_SESSION['UserName'] = $foundUser;
+                            setcookie($this->getAutologinCookieName(), $autologinCookieVal, time() + (10 * 365 * 24 * 60 * 60)); // 10 years
+                        }
+                        
+                    }
+                } 
+                
 				header('P3P: CP="IDC DSP COR CURa ADMa OUR IND PHY ONL COM STA"');
 
 				// This updates the session timeout on page load
@@ -2389,7 +2585,59 @@ END
 	 * the heaving lifting of displaying a page.
 	 */
 
-
+    /**
+     * Builds an associative array index of all action handlers located in the xataface, xataface/modules,
+     * modules, tables, modules/tables, and xataface/modules/tables directories.
+     * @return [string => boolean] Mapping full file paths of action handlers to boolean value indicating whether it exists.
+     */
+    private function buildActionIndexForOpcache() {
+        $actionsIndex = [];
+        $actionsDirs = [XFAPPROOT . 'actions', XFROOT . 'actions'];
+        $modulesDirs = [XFAPPROOT . 'modules', XFROOT . 'modules'];
+        $tablesDirs = [XFAPPROOT . 'tables', XFROOT . 'tables'];
+        foreach ($modulesDirs as $modulesDir) {
+            if (is_dir($modulesDir)) {
+                foreach (scandir($modulesDir) as $moduleDir) {
+                    if ($moduleDir{0} == '.') {
+                        continue;
+                    }
+                    $moduleDirPath = $modulesDir . DIRECTORY_SEPARATOR . $moduleDir;
+                    if (is_dir($moduleDirPath)) {
+                        $actionsDirs[] = $moduleDirPath . DIRECTORY_SEPARATOR . 'actions';
+                        $tablesDirs[] = $moduleDirPath . DIRECTORY_SEPARATOR . 'tables';
+                    }
+                    
+                }
+            }
+        }
+        foreach ($tablesDirs as $tablesDir) {
+            
+            if (is_dir($tablesDir)) {
+                foreach (scandir($tablesDir) as $tableDir) {
+                    if ($tableDir{0} == '.') {
+                        continue;
+                    }
+                    $tableDirPath = $tablesDir . DIRECTORY_SEPARATOR . $tableDir;
+                    if (is_dir($tableDirPath)) {
+                        $actionsDirs[] = $tableDirPath . DIRECTORY_SEPARATOR . 'actions';
+                    }
+                    
+                }
+            }
+        }
+       
+        foreach ($actionsDirs as $actionsDir) {
+            if (is_dir($actionsDir)) {
+                foreach (scandir($actionsDir) as $actionFile) {
+                    $actionFilePath = $actionsDir . DIRECTORY_SEPARATOR . $actionFile;
+                    if (is_file($actionFilePath) and strlen($actionFile) > 4 and substr($actionFile, -4) === '.php') {
+                        $actionsIndex[ $actionsDir . DIRECTORY_SEPARATOR . $actionFile ] = true;
+                    }
+                }
+            }
+        }
+        return $actionsIndex;
+    }
 
 
 	/**
@@ -2480,6 +2728,7 @@ END
 		if ( isset($this->_conf['_prefs']) and is_array($this->_conf['_prefs']) ){
 			$this->prefs = array_merge($this->prefs,$this->_conf['_prefs']);
 		}
+
 		if ( @$this->_conf['hide_nav_menu'] ){
 			$this->prefs['show_tables_menu'] = 0;
 		}
@@ -2504,7 +2753,7 @@ END
 			$this->prefs['disable_ajax_record_details'] = 1;
 		}
         if (!isset($this->prefs['mobile_nav_style'])) {
-            $this->prefs['mobile_nav_style'] = 'hamburger';
+            $this->prefs['mobile_nav_style'] = 'tabs';
         }
 
 		if ( $query['-action'] == 'login_prompt' ) $this->prefs['no_history'] = 1;
@@ -2535,12 +2784,28 @@ END
                 $this->prefs[$k] = 1;
             }
         }
+        if (!isset($this->prefs['mobile_app_menu_position'])) {
+            $this->prefs['mobile_app_menu_position'] = 'ne';
+        }
+        $mobileAppMenuPosition = $this->prefs['mobile_app_menu_position'];
+        if (!isset($this->prefs['mobile_app_menu_sheet_position'])) {
+            
+            $this->prefs['mobile_app_menu_sheet_position'] = $mobileAppMenuPosition == 'ne' ? 'right' : 'fill';
+        }
+        
+        $this->addBodyCSSClass('mobile-app-menu-trigger-'.$mobileAppMenuPosition);
+
+            
+        
+
         
         if (isset($this->prefs['user_stylesheet'])) {
             $userStylesheet = basename($this->prefs['user_stylesheet']);
-            if (file_exists(XFAPPROOT.'css/'.$userStylesheet)) {
+            $ssPath = XFAPPROOT.'css/'.$userStylesheet;
+            $ssRootPath = XFROOT.'css/'.$userStylesheet;
+            if ((XF_USE_OPCACHE and xf_opcache_is_script_cached($ssPath)) or file_exists($ssPath)) {
                 xf_stylesheet(DATAFACE_SITE_URL .'/css/'.$userStylesheet, false);
-            } else if (file_exists(XFROOT.'css/'.$userStylesheet)) {
+            } else if ((XF_USE_OPCACHE and xf_opcache_is_script_cached($ssRootPath)) or file_exists($ssRootPath)) {
                 xf_stylesheet(DATAFACE_URL.'/css/'.$userStylesheet, false);
             }
         }
@@ -2587,11 +2852,6 @@ END
 
 		$actionTool = Dataface_ActionTool::getInstance();
 
-		//if ( $this->_conf['multilingual_content'] ){
-			//import('I18Nv2/I18Nv2.php');
-     		//I18Nv2::autoConv();
-     	//}
-
         $record = $this->getRecord();
         if ($record and $record->getTableAttribute('no_view_tab') and $query['-action'] == 'view') {
             $relationshipActions = $record->table()->getRelationshipsAsActions();
@@ -2606,8 +2866,7 @@ END
             $recordActions = array_merge($recordActions, $relationshipActions);
             if (count($recordActions) > 0) {
                 foreach ($recordActions as $recordAction) {
-
-                    header('Location: '.$recordAction['url']);
+                    $this->redirect($recordAction['url']);
                     exit;
                 }
             }
@@ -2675,6 +2934,9 @@ END
 			$action = array('name'=>$query['-action'], 'label'=>$query['-action']);
 		}
 
+        if (@$action['page_menu_category']) {
+            $this->_conf['page_menu_category'] = $action['page_menu_category'];
+        }
 		// Step 1:  See if the delegate class has a handler.
 
 		$delegate = $table->getDelegate();
@@ -2719,10 +2981,37 @@ END
 		}
 		$doParams = array('action'=>&$action);
 			//parameters to be passed to the do method of the handler
-
-
+        
+        $foundHandlerClassName = null;
+        $actionsIndex = null;
+        if (false and XF_USE_OPCACHE) {
+            $actionsIndexPath = XFAPPROOT . 'actions.index.php';
+            if (!xf_opcache_is_script_cached($actionsIndexPath)) {
+                if (is_readable(xf_opcache_path($actionsIndexPath))) {
+                    include(xf_opcache_path($actionsIndexPath));
+                    $actionsIndex = $xf_opcache_export;
+                } else {
+                    $actionsIndex = $this->buildActionIndexForOpcache();
+                    xf_opcache_cache_array($actionsIndexPath, $actionsIndex);
+                }
+                
+            } else {
+                include(xf_opcache_path($actionsIndexPath));
+                $actionsIndex = $xf_opcache_export;
+            }
+            
+        }
+       
+        
+        
 		foreach ($locations as $handlerPath=>$handlerClassName){
-			if ( is_readable($handlerPath) ){
+            $handlerPathExists = false;
+            if (XF_USE_OPCACHE and isset($actionsIndex)) {
+                $handlerPathExists = @$actionsIndex[$handlerPath];
+            } else {
+                $handlerPathExists = is_readable($handlerPath);
+            }
+			if ( $handlerPathExists ){
 				import($handlerPath);
 				$handler = new $handlerClassName;
 				$params  = array();
@@ -3396,14 +3685,46 @@ END
 	 * You can assign your own redirect behavior by setting the redirect handler fo the application.
 	 */
 	function redirect($url){
+        if (stripos($url, 'location:') === 0) {
+            $url = substr($url, strpos(':', $url)+1);
+        }
+        $url = trim($url);
+        //print_r($_SERVER);exit;
+        $isInSite = ((strpos($url, DATAFACE_SITE_HREF) === 0) or (strpos($url, $_SERVER['HOST_URI']) === 0)) ? true : false;
+        $currentRequestHasMessage = @$this->_query['--msg'] ? true : false;
+        $urlHasMessage = strpos($url, '--msg') !== false;
+        $sessionHasMessage = @$_SESSION['--msg'] ? true : false;
+        
+        if ($isInSite and $currentRequestHasMessage and !$urlHasMessage and !$sessionHasMessage) {
+
+            $_SESSION['--msg'] = htmlspecialchars($this->_query['--msg']);
+        }
 		if ( isset($this->redirectHandler) and method_exists('redirect', $this->redirectHandler) ){
 			$this->redirectHandler->redirect($url);
 			throw new Dataface_Application_RedirectException($url);
 		}
+        $url = $this->addURLParams($url, ['--referrer']);
 		header('Location: '.$url);
 		exit;
 
 	}
+    
+    private function addURLParams($url, $params) {
+        
+        foreach ($params as $param) {
+            $isInSite = ((strpos($url, DATAFACE_SITE_HREF) === 0) or (strpos($url, $_SERVER['HOST_URI']) === 0)) ? true : false;
+            $currentRequestHasParam = @$this->_query[$param] ? true : false;
+            $urlHasParam = strpos($url, $param) !== false;
+            if ($isInSite and $currentRequestHasParam and !$urlHasParam) {
+                if (strpos($url, '?') === false) {
+                    $url .= '?';
+                }
+                $url .= '&'.urlencode($param).'='.urlencode($this->_query[$param]);
+            }
+        }
+        return $url;
+        
+    }
 
 	// @}
 	// End Utility Functions
@@ -3431,13 +3752,16 @@ END
 	function &getDelegate(){
 		if ( $this->delegate === -1 ){
 			$delegate_path = DATAFACE_SITE_PATH.'/conf/ApplicationDelegate.php';
-			if ( is_readable($delegate_path) ){
+ 
+			if ( xf_is_readable($delegate_path) ){
 				import($delegate_path);
 				$this->delegate = new conf_ApplicationDelegate();
 			} else {
 				$this->delegate = null;
 			}
-		}
+        }
+			
+		
 		return $this->delegate;
 
 	}

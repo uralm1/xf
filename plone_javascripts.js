@@ -297,4 +297,152 @@ var form=document.getElementById("result_list_selected_items_form");form.element
     
 })();
 
+(function() {
+    var isScrolled = false;
+    function onReady() {
+        var body = document.querySelector('body');
+        var runOnScroll = function(evt) {
+            //console.log("scrolling ", body.scrollTop);
+            
+            if (body.scrollTop < 100) {
+                if (isScrolled) {
+                    body.classList.remove('xf-viewport-scrolled');
+                    isScrolled = false;
+                }
+                
+            } else {
+                if (!isScrolled) {
+                    body.classList.add('xf-viewport-scrolled');
+                    isScrolled = true;
+                }
+                
+            }
+            
+        };
+    
+        body.addEventListener('scroll', runOnScroll, {passive:true});
+    }
+    window.addEventListener('DOMContentLoaded', onReady);
+    
+})();
+(function() {
+    
+    if (!window.localStorage) {
+        return;
+    }
+    var history = window.localStorage.getItem('xf-history');
+    if (!history) {
+        history = {startPos : 0, endPos: 0, urls : {}};
+        localStorage.setItem('xf-history', JSON.stringify(history));
+    } else {
+        history = JSON.parse(history);
+    }
+    history.urls[history.endPos++] = window.location.href;
+    var currPos = history.endPos-1;
+    while (history.endPos - history.startPos > 100) {
+        delete history.urls[history.startPos++];
+    }
+    localStorage.setItem('xf-history', JSON.stringify(history));
+    
+    
+    
+    
+    
+    function addBackButton() {
+        
+        if (!window.jQuery) {
+        
+            
+            return;
+        }
+        var referrerIndex = getReferrer();
+        
+        
+        var $ = jQuery;
+        var backButton = $('<button class="back-btn"><i class="material-icons">navigate_before</i> <span>Back</span></button>');
+        var backUrl = history.urls[referrerIndex];
+        if (!backUrl) {
+            return;
+        }
+        backButton.click(function() {
+            window.location.href  = backUrl;
+        });
+        backButton.insertBefore($('.site_logo'));
+        $('body').addClass('has-back-button');
+    }
+    
+    function getReferrer() {
+        var search = window.location.search;
+        
+        var referrerPos = search.indexOf('&--referrer=');
+        
+        if (referrerPos < 0) {
+            return -1;
+        }
+        referrerPos = search.indexOf('=', referrerPos)+1;
+        var referrerEndPos = search.indexOf('&', referrerPos);
+        var referrerIndex = -1;
+        if (referrerEndPos < 0) {
+            referrerIndex = search.substring(referrerPos);
+            
+        } else {
+            referrerIndex = search.substring(referrerPos, referrerEndPos);
+            
+        }
+        referrerIndex = parseInt(referrerIndex);
+        return referrerIndex;
+    }
+    
+    function addReferrer(link, index) {
+        
+        if (!link) {
+            return link;
+        }
+        if (link.indexOf('--referrer') > 0) {
+            return link;
+        }
+        if (link.indexOf('?') < 0) {
+            link += '?';
+        }
+        if (index) {
+            return link + '&--referrer=' + index;
+        }
+        return link + '&--referrer=' + currPos;
+    }
+    
+    var thisReferrer = getReferrer();
+    registerXatafaceDecorator(function(root) {
+        
+        if (!window.jQuery) {
+            console.log('jquery not loaded yet');
+            return;
+        }
+
+        var $ = jQuery;
+
+        $('[rel][href]').each(function() {
+            
+            var rel = $(this).attr('rel');
+            if (rel == 'child') {
+                $(this).attr('href', addReferrer(this.getAttribute('href')));
+            } else if (rel == 'sibling') {
+                if (thisReferrer >= 0) {
+                    $(this).attr('href', addReferrer(this.getAttribute('href'), thisReferrer));
+                }
+                
+            }
+            
+        });
+        
+    });
+    
+    window.addEventListener('DOMContentLoaded', addBackButton);
+    
+    
+    
+    
+    
+    
+})();
+
 

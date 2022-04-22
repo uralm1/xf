@@ -65,7 +65,7 @@
 
 ;; Create a new record
 [new]
-	label = New Record
+	label = "New Record"
 	breadcrumb_label="New"
 	description = Create a new record
 	url = "{$this->url('-action=new', false)}"
@@ -76,6 +76,7 @@
 	permission = new
 	order=1
 	class="featured-action"
+    rel=child
 	
 ;; Post a record update using HTTP POST
 [post]
@@ -103,6 +104,7 @@
 	mode = copy_replace
 	order=5
 	icon="{$dataface_url}/images/view.gif"
+    rel=child
 	
 [copy_replace_ui]
 	label="Copy Set"
@@ -114,6 +116,7 @@
 	icon="{$dataface_url}/images/view.gif"
 	category=table_actions
 	permission=copy
+    rel=child
 
 [update_set]
 	label="Update Set"
@@ -125,6 +128,7 @@
 	order=6
 	icon="{$dataface_url}/images/edit.gif"
 	category=table_actions
+    rel=child
 
 
 
@@ -136,7 +140,7 @@
 	icon = "{$dataface_url}/images/table.gif"
 	mode=list
 	permission=export_csv
-	category=result_list_actions
+	category=table_actions
 	
 [export_xml]
 	label = Export XML
@@ -144,8 +148,8 @@
 	url = "{$this->url('-action=export_xml')}"
 	permission=export_xml
 	mode=list
-	category=result_list_actions
-	icon="{$dataface_url}/images/xml.png"
+	category=table_actions
+    materialIcon=code
 	
 [export_json]
 	label = Export JSON
@@ -159,8 +163,75 @@
 	subcategory=record_actions
 	category="record_actions_menu"
 	
-
+[edit_record_actions]
+	label=""
+	materialIcon="more_vert"
+	subcategory=edit_record_actions
+	category="edit_record_actions_menu"
     
+    
+[save_record]
+    label="Save"
+    category=edit_record_actions_menu
+    class="featured-action"
+    materialIcon="save"
+    url="javascript:jQuery('input[type="submit"]').each(function(e){ if (jQuery(this).attr('name') == '--session:save') {this.click();}});"
+    
+[cancel_edit_record]
+    label="Cancel"
+    category=edit_record_actions_menu
+    materialIcon="cancel"
+    url="{$app->url('-action=browse')}"
+    
+[new_record_actions]
+	label=""
+	materialIcon="more_vert"
+	subcategory=new_record_actions
+	category="new_record_actions_menu"
+    
+[new_related_record_actions]
+	label=""
+	materialIcon="more_vert"
+	subcategory=new_related_record_actions
+	category="new_related_record_actions_menu"
+    
+[existing_related_record_actions]
+	label=""
+	materialIcon="more_vert"
+	subcategory=existing_related_record_actions
+	category="existing_related_record_actions_menu"
+
+
+[save_new_record > save_record]
+    category=new_record_actions_menu
+    
+[cancel_new_record > cancel_edit_record]
+    url="{$app->url('-action=list')}"
+    category=new_record_actions_menu
+    
+    
+[save_new_related_record > save_record]
+    category=new_related_record_actions_menu
+    url="javascript:jQuery('input[type="submit"]').each(function(e){ if (jQuery(this).attr('name') == '-Save') {this.click();}});"
+    
+[save_existing_related_record > save_record]
+    category=existing_related_record_actions_menu
+    url="javascript:jQuery('input[type="submit"]').each(function(e){ if (jQuery(this).attr('name') == '-Save') {this.click();}});"
+    
+[cancel_save_existing_record]
+    category=existing_related_record_actions_menu
+    url="{$app->url('-action=related_records_list')}"
+    label="Cancel"
+    materialIcon=cancel
+    
+[cancel_new_related_record]
+    category=new_related_record_actions_menu
+    url="{$app->url('-action=related_records_list')}"
+    label="Cancel"
+    materialIcon=cancel
+    
+
+
 
 [view_xml]
 	label = Export XML
@@ -170,7 +241,7 @@
 	permission=view xml
 	mode=browse
 	category=record_actions
-	icon="{$dataface_url}/images/xml.png"
+	materialIcon=code
 	condition="$record"
 	
 
@@ -180,7 +251,7 @@
 	url="{$this->url('-action=feed&-mode=list')}&--format=RSS2.0"
 	materialIcon="rss_feed"
 	permission=rss
-	category=result_list_actions
+	category=table_actions
 	
 [record_rss > rss]
 	category=record_actions
@@ -213,11 +284,12 @@
 	permission=export_csv
 	category=related_list_actions
 
-[table_actons]
+[table_actions]
 	label=""
 	materialIcon="more_vert"
 	subcategory=table_actions
 	category=table_actions_menu
+    order=99
 
 ;; Delete the current record
 [delete]
@@ -225,12 +297,13 @@
 	description = Delete current record
 	url = "{$this->url('-action=delete&-delete-one=1')}"
 	materialIcon="delete"
-	category = table_actions
+	category = record_actions
 	accessKey = d
 	mode = browse
 	condition = "$query['-mode']=='browse'"
 	permission = delete
 	order=5
+    rel=child
 
 ;; Delete all records in the current found set
 [delete_found]
@@ -243,6 +316,7 @@
 	condition = "$query['-mode']=='list'"
 	permission = delete found
 	order=5
+    rel=child
 	
 [delete_selected]
 	label="Delete"
@@ -251,6 +325,7 @@
 	category=selected_result_actions
 	confirm="Are you sure you want to delete the selected records?"
 	icon="{$dataface_url}/images/delete.gif"
+    rel=child
 	
 
 ;; Invalidates the current translations and marks a new version
@@ -317,6 +392,8 @@
 	category = record_tabs
 	selected_condition = "$query['-action'] == 'view'"
 	order=-2
+    page_menu_category=record_actions_menu
+    rel=sibling
 
 ;; Edit the details of the current record.
 [edit]
@@ -324,11 +401,13 @@
 	url = "{$this->url('-action=edit&-relationship=')}"
 	template = Dataface_Edit_Record.html
 	mode = browse
-	category = record_tabs
+	category = record_actions_menu
 	selected_condition = "$query['-action'] == 'edit'"
 	permission = edit
 	order=-1
 	materialIcon=create
+    class="featured-action"
+    rel=child
 	
 
 ;; Translate a record
@@ -337,12 +416,13 @@
 	url = "{$this->url('-action=translate&-relationship=')}"
 	template = Dataface_Translate_Record.html
 	mode = browse
-	category = record_tabs
+	category = record_actions
 	selected_condition = "$query['-action'] == 'translate'"
 	condition = "($tableobj =& Dataface_Table::loadTable($table)) and count($tableobj->getTranslations()) > 0"
 	permission = translate
 	order=3
 	materialIcon=translate
+    rel=child
 	
 
 ;; History for a record
@@ -350,20 +430,24 @@
 	url = "{$this->url('-action=history')}"
 	template = Dataface_Record_History.html
 	mode = browse
-	category = record_tabs
+	category = record_actions
 	selected_condition = "$query['-action'] == 'history'"
 	condition = "is_array($this->_conf['history'])"
 	permission = history
 	order=4
 	materialIcon=history
+    page_menu_category=record_actions_menu
+    rel=child
 	
 
 [view_history_record_details]
 	mode = browse
 	permission = history
+    rel=child
 	
 [single_record_search]
 	permission=view
+    rel=child
 	
 
 ;;------------------------------------------------------------------------------
@@ -378,6 +462,8 @@
 	permission = view
 	related=1
 	allow_override="relationships.ini"
+    page_menu_category=record_actions_menu
+    rel=sibling
 
 ;;------------------------------------------------------------------------------
 ;; Relationship Actions
@@ -392,6 +478,7 @@
 	category = relationship_actions
 	label = "Add new {$query['-relationship']} record"
 	related=1
+    rel=child
 
 ;; Show the "Add Existing Related Record" form to add an existing record to a 
 ;; relationship.
@@ -401,6 +488,7 @@
 	permission = add existing related record
 	category = relationship_actions
 	related=1
+    rel=child
 
 ;; Remove record from a relationship
 [remove_related_record]
@@ -410,6 +498,7 @@
 	category=selected_records_actions
 	label = remove
 	related=1
+    rel=child
 	
 	
 
@@ -439,6 +528,7 @@
 	;; By default we use email validation. i.e accounts are not created until
 	;; they have been verified by email.  @see activate
 	email_validation=1
+    rel=child
 	
 [forgot_password]
 	;; This should appear in beneath the login form
@@ -447,6 +537,7 @@
 	label = Forgot password
 	url="{$this->url('-action=forgot_password')}"
     condition="class_exists('Dataface_AuthenticationTool') and Dataface_AuthenticationTool::getInstance()->isPasswordLoginAllowed()"
+    rel=child
 
 
 ;; An action to activate an account after it has been verified by email.
@@ -539,11 +630,15 @@
 	materialIcon="account_circle"
 	
 [change_password]
-	condition="(df_is_logged_in()) and Dataface_AuthenticationTool::getInstance()->isPasswordLoginAllowed()"
+	condition="(df_is_logged_in()) and Dataface_AuthenticationTool::getInstance()->isPasswordLoginAllowed() and Dataface_AuthenticationTool::getInstance()->userHasPassword()"
 	url="{$app->url('-action=change_password')}"
 	label="Change Password"
 	category=personal_tools
 	materialIcon="security"
+    
+[create_password > change_password]
+    condition="(df_is_logged_in()) and Dataface_AuthenticationTool::getInstance()->isPasswordLoginAllowed() and !Dataface_AuthenticationTool::getInstance()->userHasPassword()"
+    label="Create Password"
 
 [personal_tools_logout]
 	condition="(df_is_logged_in())"
@@ -565,13 +660,15 @@
 	url="{$app->url('-action=manage')}"
 	template=manage.html
 	materialIcon="settings"
-	
+    
+
 [manage_migrate]
 	permission=manage_migrate
 	category=management_actions
 	url="{$app->url('-action=manage_migrate')}"
 	label="Migrations"
 	description="A tool to help migrate to newer versions of Dataface."
+    rel=child
 
 [sync_bindings]
 	permission=manage_sync_bindings
@@ -579,30 +676,34 @@
 	url="{$app->url('-action=sync_bindings')}"
 	label="Synchronize Field Bindings"
 	description="Updates the database triggers for the current field bindings, as declared in the fields.ini files."
+    rel=child
 	
 	
 [clear_views]
-	permission=clear views
-	category=management_actions
+	permission=manage
 	url="{$app->url('-action=clear_views')}"
 	label="Clear __sql__ Views"
 	description="Clears all of the cached views of the form dataface_view__xxx in the database.  This is necessary if you have added or removed columns from tables that also specify a custom __sql__ directive in the fields.ini file."
 	
-[clear_templates_c]
-	permission=clear views
-	category=management_actions
-	url="{$app->url('-action=clear_templates_c')}"
-	label="Clear templates_c"
-	description="Clears all of the cached templates.  May be necessary if you have updated Xataface"
+[clear_cache]
+    permission=manage
+    category=management_actions
+    url="{$app->url('-action=clear_cache')}"
+    label="Clear Cache"
+    description="Clear all caches, such as opcache, templates, output cache, etc.."
+	
+[clear_templates_c > clear_cache]
+    category=
 	
 	
 [manage_output_cache]
-	permission=manage_output_cache
+	permission=manage
 	category=management_actions
 	url="{$app->url('-action=manage_output_cache')}"
 	label="Output cache"
 	description="Management options for the Dataface output cache."
         condition="$app->_conf['_output_cache'] and $app->_conf['_output_cache']['enabled']"
+    rel=child
 	
 [manage_build_index]
 	permission=manage_build_index
@@ -610,6 +711,7 @@
 	url="{$app->url('-action=manage_build_index')}"
 	label="Build Search Index"
 	description="Build and maintain a search index to perform full site searches."
+    rel=child
 
 
 [copy_selected]
@@ -619,6 +721,7 @@
 	category=selected_result_actions
 	permission=copy
 	icon="{$dataface_url}/images/view.gif"
+    rel=child
 
 [update_selected]
 	url="javascript:updateSelected('result_list')"
@@ -627,6 +730,7 @@
 	category=selected_result_actions
 	permission=update_selected
 	icon="{$dataface_url}/images/edit.gif"
+    rel=child
 
 
 [update_selected_related]
@@ -636,6 +740,7 @@
 	category=selected_related_result_actions
 	permission=update related records
 	condition="$record and $record->checkPermission('edit', array('relationship'=>$query['-relationship']))"
+    rel=child
 	
 
 [remove_selected_related]
@@ -645,6 +750,7 @@
 	category=selected_related_result_actions
 	permission=remove related record
 	condition="$record and $record->checkPermission('remove related record', array('relationship'=>$query['-relationship']))"
+    rel=child
 
 [xml_list]
 	permission = xml_view
@@ -660,6 +766,7 @@
 	permission=view
 	url="{$record->getURL('-action=view')}"
 	icon="{$dataface_url}/images/view.gif"
+    rel=child
 	
 [edit_event_details]
 	category=event_actions
@@ -668,6 +775,7 @@
 	permission=edit
 	url="{$record->getURL('-action=edit')}"
 	icon="{$dataface_url}/images/edit.gif"
+    rel=child
 
 [RecordBrowser_data]
 	permission=view
@@ -683,6 +791,7 @@
 	condition="$record"
 	url="{$record->getURL('-action=view')}"
 	url_condition="$record"
+    rel=child
 	
 [edit_related_record]
 	category=view_related_record_actions
@@ -693,6 +802,7 @@
 	class="edit-btn"
 	condition="$record"
 	permission="edit"
+    rel=child
 	
 [cancel_edit_related_record]
 	category=edit_related_record_actions
@@ -807,3 +917,10 @@
 [mobile_edit > edit]
     category=mobile_edit
     featured=1
+    rel=child
+    
+[password_changed_home]
+    category=password_changed_actions
+    label=Home
+    url="{$site_href}"
+    materialIcon=home

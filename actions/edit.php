@@ -41,11 +41,12 @@ class dataface_actions_edit {
 		
 		$currentRecord =& $app->getRecord();
         
+        $app->addBodyCSSClass('no-app-menu');
         $app->addBodyCSSClass('no-table-tabs');
         $app->addBodyCSSClass('no-mobile-header');
         $app->addBodyCSSClass('no-fab');
         $app->addBodyCSSClass('no-record-heading');
-    
+        $app->_conf['page_menu_category'] = 'edit_record_actions_menu';
 		
         
 		if (!$currentRecord) {
@@ -76,6 +77,7 @@ class dataface_actions_edit {
 		 */
 		//$form = new Dataface_QuickForm($query['-table'], $app->db(),  $query);
 		if ($currentRecord){
+            $app->setPageTitle($currentRecord->getTitle());
 		//if ($resultSet->found()> @$query['-cursor']){
 
 			$form = $formTool->createRecordForm($currentRecord, false, @$query['--tab'], $query, $includedFields);
@@ -261,7 +263,7 @@ class dataface_actions_edit {
                                         
 					$link = $_SERVER['HOST_URI'].DATAFACE_SITE_HREF.'?'.$vals['-query'].'&--saved=1&--msg='.$msg;
 					
-					
+
 					/*
 					 *
 					 * Redirect the user to the appropriate record.

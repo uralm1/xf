@@ -229,6 +229,7 @@ class Dataface_SkinTool extends Smarty{
 		$this->register_function('form_context', array(&$this, 'form_context'));
         $this->register_function('cancel_back_button', array(&$this, 'cancel_back_button'));
         $this->register_function('script', array(&$this, 'script'));
+        $this->register_function('html_attributes', array(&$this, 'html_attributes'));
 		$this->register_block('translate', array(&$this, 'translate'));
 		$this->register_block('use_macro',array(&$this,'use_macro'));
 		$this->register_block('define_slot', array(&$this,'define_slot'));
@@ -239,6 +240,7 @@ class Dataface_SkinTool extends Smarty{
 		$this->register_block('master_detail', array(&$this, 'master_detail'));
 		$this->register_block('master', array(&$this, 'master'));
 		$this->register_block('detail', array(&$this, 'detail'));
+        $this->register_function('relationship_label', array(&$this, 'relationship_label'));
 
 
 	}
@@ -263,6 +265,69 @@ class Dataface_SkinTool extends Smarty{
 
 		return $this->resultController;
 	}
+    
+    function relationship_label($params) {
+        $app = Dataface_Application::getInstance();
+        $query = $app->getQuery();
+        if (!@$query['-relationship']) {
+            return '';
+        }
+        $table = Dataface_Table::loadTable($query['-table']);
+        if (!$table or PEAR::isError($table)) return '';
+        $relationship = $table->getRelationship($query['-relationship']);
+        if (!$relationship or PEAR::isError($relationship)) {
+            return '';
+        }
+        if (@$params['count']) {
+            if ($params['count'] == 0 or $params['count'] > 1) {
+                return $relationship->getLabel();
+            } else {
+                return $relationship->getSingularLabel();
+            }
+        } else {
+            return $relationship->getLabel();
+        }
+
+    }
+    
+    /**
+     * Renders string attributes as html attributes.  
+     * @param string $params.atts The attributes as a string.  Syntax is to separate attributes with semi-colons, and
+     * use colons to separate keys from values.  E.g. {html_attributes atts="href:index.php;title=A title"} will ve 
+     * rendered as href="index.php" title="A title"
+     * 
+     * This is useful for storing multiple attributes in a single configuration option, and then have the template
+     * parse them out.  This is used in the Dataface_Logo.html for the alt images.
+     */
+    function html_attributes($params, &$smarty) {
+
+        $separator = ';';
+        if (@$params['separator']) {
+            $separator = $params['separator'];
+        }
+        //print_r($params);exit;
+        
+        $out = '';
+        if (@$params['atts']) {
+
+            $string = $params['atts'];
+
+            $parts = explode($separator, $string);
+            foreach ($parts as $part) {
+                $part = trim($part);
+                $kv = explode(':', $part, 2);
+                if (strlen($out) > 0) {
+                    $out .= ' ';
+                }
+                if (count($kv) > 1) {
+                    $out .= $kv[0].'="'.htmlspecialchars($kv[1]).'"';
+                } else {
+                    $out .= $kv[0];
+                }
+            }
+        }
+        return $out;
+    }
     
     function getBackLink() {
         $app = Dataface_Application::getInstance();
@@ -904,6 +969,11 @@ END;
 		$params2 = array();
 
 		$params['actions'] = $table->getRelationshipsAsActions($params2);
+        if ($params['actions']) {
+            foreach ($params['actions'] as $k => $v) {
+                $params['actions'][$k]['rel'] = 'sibling';
+            }
+        }
 
 		return $this->actions_menu($params, $smarty);
 
@@ -1154,6 +1224,18 @@ END;
 			$columns = array();
 		}
 		$list = new Dataface_ResultList( $query['-table'], $this->app->db(), $columns, $query);
+        $table = Dataface_Table::loadTable($query['-table']);
+        $listTemplate = $table->getAttribute('list_template');
+        if (@$params['template']) {
+            $listTemplate = $params['template'];
+        }
+        if ($listTemplate == '@grid') {
+            $listTemplate = 'xataface/actions/list/grid.html';
+        }
+        
+        if ($listTemplate) {
+            $list->setTemplate($listTemplate);
+        }
 		echo $list->toHtml();
 
 	}

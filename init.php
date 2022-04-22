@@ -20,7 +20,7 @@
  */
  
 function init($site_path, $dataface_url){
-      ini_set('pcre.jit', '0');
+	ini_set('pcre.jit', '0');
         $originalUrl = isset($_SERVER['HTTP_X_ORIGINAL_URL']) ? parse_url($_SERVER['HTTP_X_ORIGINAL_URL']) : null;
         if ($originalUrl) {
             $host = @$originalUrl["host"];
@@ -56,17 +56,17 @@ function init($site_path, $dataface_url){
             } 
             // define a HOST_URI variable to contain the host portion of all urls
             $host = @$_SERVER['HTTP_HOST'];
-	    if (!$host) $host = 'localhost';
+            if (!$host) $host = 'localhost';
             if (isset($_SERVER['HTTP_X_FORWARDED_HOST'])) {
                 $host = $_SERVER['HTTP_X_FORWARDED_HOST'];
                 if (strpos($host, ',') !== false) {
                 	$host = trim(substr($host, 0, strpos($host, ',')));
                 }
             }
-	    $port = @$_SERVER['SERVER_PORT'];
-	    if (!$port) {
-	        $port = 80;
-	    }
+            $port = @$_SERVER['SERVER_PORT'];
+            if (!$port) {
+                $port = 80;
+            }
             if (isset($_SERVER['HTTP_X_FORWARDED_HOST'])) {
             	if (isset($_SERVER['HTTP_X_FORWARDED_PORT'])) {
                 	$port = $_SERVER['HTTP_X_FORWARDED_PORT'];
@@ -85,9 +85,9 @@ function init($site_path, $dataface_url){
             if (isset($_SERVER['HTTP_X_FORWARDED_PROTO'])) {
                 $protocol = $_SERVER['HTTP_X_FORWARDED_PROTO'];
                 if (strpos($protocol, ',') !== false) {
-                	$protocol = trim(substr($protocol, strpos($protocol, ',')));
+                	$protocol = trim(substr($protocol, 0, strpos($protocol, ',')));
                 }
-	    }
+            }
             if ($protocol == 'https' and "$port" == "80") {
                 $port = 443;
             } else if ($protocol == 'http' and "$port" == "443") {
@@ -119,7 +119,7 @@ function init($site_path, $dataface_url){
         if ( (strpos($host, ':') === false) and !($protocol == 'https' and "$port" == "443" ) and !($protocol == 'http' and "$port" == "80") ){
                 $_SERVER['HOST_URI'] .= ':'.$port;
         }
-
+        
     
 	if (defined('DATAFACE_SITE_PATH')){
 		trigger_error("Error in ".__FILE__."
