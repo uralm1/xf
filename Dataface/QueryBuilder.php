@@ -417,7 +417,7 @@ class Dataface_QueryBuilder {
 				// state of the record.
 				continue;
 			}
-            if (@$fieldArr['ownerstamp']) {
+            if (@$fieldArr['ownerstamp'] or @$fieldArr['uuid']) {
                 continue;
             }
 
@@ -515,6 +515,11 @@ class Dataface_QueryBuilder {
 					continue;
 				}
 			}
+            if (@$field['uuid']) {
+                $insertedKeys[] = '`'.$key.'`';
+                $insertedValues[] = 'UUID()';
+                continue;
+            }
             if (@$field['ownerstamp']) {
                 if (class_exists('Dataface_AuthenticationTool')) {
                     $auth = Dataface_AuthenticationTool::getInstance();
@@ -528,9 +533,10 @@ class Dataface_QueryBuilder {
                     } else {
                         $user = $auth->getLoggedInUser();
                         if ($user) {
-                            $keynames = array_keys($keys);
+                            $keynames = array_keys($user->table()->keys());
                             if (count($keynames) == 1) {
-                                $id = $user->val($keynames[0]);
+                                $keyname = array_shift($keynames);
+                                $id = $user->val($keyname);
                                 $insertedKeys[] = '`'.$key.'`';
                                 $insertedValues[] = $this->prepareValue($key, $id);
                                 $record->setValue($key, $id);

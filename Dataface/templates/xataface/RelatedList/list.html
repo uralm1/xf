@@ -139,9 +139,11 @@
 				</div>
 			{/if}
 
-			<div class="resultlist-controller">
-				{$relatedResultController}
-			</div>
+            {if $ENV.prefs.show_bottom_result_controller or ($records|@count > 30 and !$ENV.prefs.hide_bottom_result_controller)}
+    			<div class="resultlist-controller">
+                   {$relatedResultController} 
+    			</div>
+            {/if}
 			{if $ENV.prefs.allow_reorder_related_rows}
 			<script language="javascript" src="{$prototype_url|escape}"></script>
 			<script language="javascript" src="{$scriptaculous_url|escape}"></script>
@@ -227,8 +229,15 @@
 		{/if}
 	
 	{else}
-	
-		<p>{translate id="scripts.GLOBAL.NO_RECORDS_MATCHED_REQUEST"}No records matched your request.{/translate}</p>
+
+        <div class="{$targetDevice|escape} relationship-empty">
+            <p>{translate id="scripts.NO_RELATED_RECORDS_YET" relationshipLabel=$relationship_label}There are no {$relationship_label|lcfirst|escape} here yet.{/translate}</p>
+	    {if  $relatedList->_relationship->supportsAddNew() and $can_add_new_related_record}
+			{actions_menu category="empty_relationship_actions"}
+        {else}
+		    
+        {/if}
+        </div>
 	{/if}
 
 	

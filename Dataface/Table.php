@@ -2930,7 +2930,7 @@ class Dataface_Table {
 					);
 				}
 			}
-            if (@$field['ownerstamp'] or @$field['timestamp'] == 'insert' or @$field['timestamp'] == 'update') {
+            if (@$field['ownerstamp'] or @$field['uuid'] or @$field['timestamp'] == 'insert' or @$field['timestamp'] == 'update') {
                 $field['widget']['type'] = 'hidden';
             }
             if (@$field['ajax_value']) {
@@ -3521,8 +3521,12 @@ class Dataface_Table {
     }
     
     function getListStyle() {
-        if (@$this->_atts) {
+        if (@$this->_atts and !empty($this->_atts['listStyle'])) {
             return $this->_atts['listStyle'];
+        }
+        $app = Dataface_Application::getInstance();
+        if (!empty($app->_conf['listStyle'])) {
+            return $app->_conf['listStyle'];
         }
         return 'auto';
     }

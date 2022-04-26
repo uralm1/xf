@@ -429,7 +429,9 @@ class Dataface_Record {
 	}
 
 
-
+    function tablename() {
+        return $this->_table->tablename;
+    }
 
 
 	/**
@@ -2597,11 +2599,15 @@ class Dataface_Record {
 		}
 
 		$field =& $this->_table->getField($fieldname);
+        if (PEAR::isError($field)) {
+            throw new Exception("Attempt to get non-existent field $fieldname in table ".$this->_table->tablename.": ".$field->getMessage());
+        }
 		if (@$field['displayField']) {
 			return $this->display($field['displayField'], $index, $where, $sort, $urlencode);
 		}
 		if ( $this->_table->isBlob($fieldname) or ($this->_table->isContainer($fieldname) and (@$field['secure'] or @$field['transform']))){
-			if ($this->getLength($fieldname) > 0) {
+			$thumb = null;
+            if ($this->getLength($fieldname) > 0) {
 				unset($table);
 				$table =& Dataface_Table::loadTable($field['tablename']);
 				$keys = array_keys($table->keys());
@@ -2623,6 +2629,15 @@ class Dataface_Record {
 			} else {
 				$out = '';
 			}
+            
+			$evt = new stdClass;
+			$evt->record = $this;
+			$evt->field =& $field;
+			$evt->value = $out;
+            $evt->thumb = $thumb;
+			$table->app->fireEvent('Record::display', $evt);
+			$out = $evt->value;
+            
 			if (!$thumbnail) {
 			    $this->cache[__FUNCTION__][$fieldname][$index][$where][$sort] = $out;
 			}
@@ -2644,6 +2659,15 @@ class Dataface_Record {
 			if ( strlen($out) > 1 and $out[0] == '/' and $out[1] == '/' ){
 				$out = substr($out,1);
 			}
+            
+			$evt = new stdClass;
+			$evt->record = $this;
+			$evt->field =& $field;
+			$evt->value = $out;
+            $evt->thumbnail = $thumbnail;
+			$table->app->fireEvent('Record::display', $evt);
+			$out = $evt->value;
+            
 			$this->cache[__FUNCTION__][$fieldname][$index][$where][$sort] = $out;
 			if (!$out and @$field['display.fallback']) {
 				$out = $field['display.fallback'];

@@ -3,6 +3,7 @@ class dataface_actions_view_related_record {
 	function handle($params){
 		$app = Dataface_Application::getInstance();
 		$query =& $app->getQuery();
+        $app->_conf['page_menu_category'] = 'record_actions_menu';
 		
 		$related_record = df_get_record_by_id($query['-related-record-id']);
 		if ( !$related_record || PEAR::isError($related_record) ){
@@ -16,6 +17,12 @@ class dataface_actions_view_related_record {
 		if ( !@$perms['view'] ){
 			return Dataface_Error::permissionDenied('You don\'t have permission to view this record.');
 		}
+        
+        if ($related_record->_relationship->isLinkToDomainRecord()) {
+            $domainRecord = $related_record->toRecord();
+            header('Location: '.$domainRecord->getURL());
+            return;
+        }
 		
 		$query['-relationship'] = $related_record->_relationship->getName();
 		Dataface_JavascriptTool::getInstance()->import('xataface/actions/view_related_record.js');
