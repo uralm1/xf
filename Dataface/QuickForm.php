@@ -306,7 +306,7 @@ class Dataface_QuickForm extends HTML_QuickForm {
 
 			if ( is_array($query) ){
 				foreach ( array_keys($query) as $postKey ){
-					if ( $query[$postKey]{0} != '=' ){
+					if ( $query[$postKey][0] != '=' ){
 						$query[$postKey] = '='.$query[$postKey];
 					}
 				}
@@ -818,7 +818,7 @@ class Dataface_QuickForm extends HTML_QuickForm {
 
 			if ($tableDelegate) {
 				$methodName = 'prevalidate';
-				if (method_exists($tableDelegate, $methodName)) {
+				if (isset($tableDelegate) and method_exists($tableDelegate, $methodName)) {
 					$res = $tableDelegate->$methodName($this->_record, $rec, $this->_new);
 					if (Dataface_Error::isNotice($res)) {
 						$this->_errors[] = $res->getMessage();

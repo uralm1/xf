@@ -93,7 +93,9 @@ class Dataface_SkinTool extends Smarty{
 
 
 	function __construct() {
-
+        if (defined('XF_PHP8') and !defined('XF_PHP8_STRICT_SMARTY')) {
+            error_reporting(E_ALL & ~E_WARNING & ~E_NOTICE);
+        }
 		if ( is_writable($GLOBALS['Dataface_Globals_Local_Templates_c']) ){
 
 			$this->compile_dir = $GLOBALS['Dataface_Globals_Local_Templates_c'];
@@ -355,7 +357,7 @@ class Dataface_SkinTool extends Smarty{
     	$params = array('resource_name'=>$resource_name, 'resource_base_path' => $this->template_dir);
     	$name = $this->_parse_resource_name($params);
     	$template_dir = dirname($params['resource_name']);
-    	$skin = $this->skins[$template_dir];
+    	$skin = @$this->skins[$template_dir];
     	if ( strlen($skin) > 0 and preg_match('/^[0-9a-zA-Z_]+$/', $skin) ){
     		$compile_dir = $this->compile_dir.'/'.$skin;
     		if ( !file_exists($compile_dir) ){
@@ -677,7 +679,7 @@ END;
 		}
 
 		$url = DATAFACE_URL;
-		if ( strlen($url) > 0 and $url{0} != '/' ){
+		if ( strlen($url) > 0 and $url[0] != '/' ){
 			$url = DATAFACE_SITE_URL.'/'.$url;
 		} else if ( strlen($url) == 0 ){
 			$url = DATAFACE_SITE_URL;
@@ -727,29 +729,16 @@ END;
             $params['record'] =& $this->ENV['record'];
 		}
 		$actions = $actionTool->getActions($params);
-        foreach ($actions as $k=>$a) {
-			if ( @$a['subcategory'] ){
-				$p2 = $params;
-				$p2['category'] = $a['subcategory'];
-				$subactions = $actionTool->getActions($p2);
-                if (count($subactions) > 0) {
-                    if (@$params['flatten']) {
-                        foreach ($subactions as $sa) {
-                            $actions[] = $sa;
-                        }
-                        unset($actions[$k]);
-                    } else {
-                        $actions[$k]['subactions'] = $subactions;
-                    }
-    				
-                    
-                } else {
-                    unset($actions[$k]);
-                }
-				
-
-			}
-        }
+        $this->fillSubactions($actions, true);
+        $flatActions = [];
+        $this->flattenActionRefsInto($flatActions, $actions);
+		foreach (array_keys($flatActions) as $k){
+            $a = & $flatActions[$k];
+            if (@$a['hidden_status']) $statuses[] = $a['hidden_status'];
+            if (@$a['visible_status']) $statuses[] = $a['visible_status'];
+            unset($a);
+		}
+       
         if ($firstOnly) {
             $action = null;
             foreach ($actions as $a) {
@@ -766,6 +755,35 @@ END;
 	}
 
     private $statusClassesAddedToCSS = array();
+    
+    private function fillSubactions(&$actions, $recursive = false) {
+        $actionTool = Dataface_ActionTool::getInstance();
+		foreach ($actions as $k=>$a){
+            
+			if ( @$a['subcategory'] ){
+				$p2 = $params;
+				$p2['category'] = $a['subcategory'];
+				$subactions = $actionTool->getActions($p2);
+                if (count($subactions) > 0) {
+                    if ($recursive) {
+                        $this->fillSubactions($subactions);
+                    }
+    				$actions[$k]['subactions'] = $subactions;
+                } else {
+                    unset($actions[$k]);
+                }
+			}
+		}
+    }
+    
+    private function flattenActionRefsInto(&$dest, &$src) {
+        foreach (array_keys($src) as $k) {
+            $dest[$k] =& $src[$k];
+            if (@$src[$k]['subactions']) {
+                $this->flattenActionRefsInto($dest, $src[$k]['subactions']);
+            }
+        }
+    }
 
 	function actions_menu($params, &$smarty){
         
@@ -854,29 +872,15 @@ END;
 		}
 
         $statuses = array();
-		foreach ($actions as $k=>$a){
+        $this->fillSubactions($actions, true);
+        $flatActions = [];
+        $this->flattenActionRefsInto($flatActions, $actions);
+		foreach (array_keys($flatActions) as $k){
+            $a = & $flatActions[$k];
             if (@$a['hidden_status']) $statuses[] = $a['hidden_status'];
             if (@$a['visible_status']) $statuses[] = $a['visible_status'];
-            if ($navicon) $actions[$k]['navicon'] = $navicon; 
-            
-			if ( @$a['subcategory'] ){
-				$p2 = $params;
-				$p2['category'] = $a['subcategory'];
-				$subactions = $actionTool->getActions($p2);
-                if (count($subactions) > 0) {
-    				$actions[$k]['subactions'] = $subactions;
-                    foreach ($subactions as $k=>$sa) {
-                        if (@$sa['hidden_status']) $statuses[] = $sa['hidden_status'];
-                        if (@$sa['visible_status']) $statuses[] = $sa['visible_status'];
-             
-                    }
-                } else {
-                    unset($actions[$k]);
-                }
-				
-
-			}
-
+            if ($navicon) $a['navicon'] = $navicon; 
+            unset($a);
 		}
 		//print_r($actions);
 		$context['actions'] =& $actions;
@@ -1463,9 +1467,9 @@ END;
 		$fields = array();
 		foreach ($query as $k=>$v){
 			if ( isset($exclude[$k]) ) continue;
-			if ( is_string($v) and strlen($k)>1 and $k{0} === '-' and $k{1} !== '-' ){
+			if ( is_string($v) and strlen($k)>1 and $k[0] === '-' and $k[1] !== '-' ){
 				$fields[] = '<input type="hidden" name="'.df_escape($k).'" value="'.df_escape($v).'"/ >';
-			} else if ( @$params['filters'] and is_string($v) and strlen($v)>0 and strlen($k)>0 and $k{0} !== '-'){
+			} else if ( @$params['filters'] and is_string($v) and strlen($v)>0 and strlen($k)>0 and $k[0] !== '-'){
 				$fields[] = '<input type="hidden" name="'.df_escape($k).'" value="'.df_escape($v).'"/ >';
 			}
 		}

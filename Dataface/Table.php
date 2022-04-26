@@ -557,6 +557,9 @@ class Dataface_Table {
 			$delegateClass = $this->_delegateFilePath();
 			
 			$sqlQuery = null;
+            if ($this->tablename == '_tmp_null') {
+                $sqlQuery = "select NULL as `id`";
+            }
 			//echo "ini path $iniPath ".$this->tablename;
             if ((XF_USE_OPCACHE and xf_opcache_is_script_cached($iniPath)) or file_exists($iniPath)) {
                 if (XF_USE_OPCACHE and xf_opcache_is_script_cached($iniPath)) {
@@ -583,11 +586,13 @@ class Dataface_Table {
 
 				$delObj = new $delClassName;
 				$this->_delegate = $delObj;
-                if (method_exists($delObj, '__sql__')) {
+                if (isset($delObj) and method_exists($delObj, '__sql__')) {
 					
                     $sqlQuery = $delObj->__sql__();
                 }
             }
+            
+            
 			//echo "here $sqlQuery";exit;
             if (!isset($sqlQuery)) {
                 throw new Exception("No SQL query found for temp table ".$this->tablename);
@@ -733,8 +738,14 @@ class Dataface_Table {
 					unset($widget);
 				}
 			}
+            if ($tablename == '_tmp_null') {
+                //print_r($this->_fields);
+                //echo "here";exit;
+                $this->_fields['id']['Key'] = 'PRI';
+                $this->_keys = ['id' => $this->_fields['id'] ];
 
-
+            }
+            
 
 
 
@@ -785,6 +796,7 @@ class Dataface_Table {
 			}
 		}
 
+        
 		$this->_loadFieldsIniFile();
 
 		$parent =& $this->getParent();
@@ -1372,6 +1384,28 @@ class Dataface_Table {
 		}
 		return $this->creatorField;
 	}
+    
+    private $userFields;
+    /**
+     * For caching primarily, a table may mark a field as referencing a user for which
+     * a particular record is targeted.  This will cause a "phantom" table to be created
+     * named _my_{$tablename} that will be "marked" via Dataface_Application::markCache()
+     * for the user any time the record is modified.
+     *
+     * @since 3.0
+     */
+    function getUserFields() {
+        if (!isset($this->userFields)) {
+            $this->userFields = [];
+    		foreach ($this->fields(false,true) as $field){
+    			if (!empty($field['username']) or !empty($field['userid'])) {
+    			    $this->userFields[] = $field['name'];
+    			}
+    		}
+            
+        }
+        return $this->userFields;
+    }
 
 	/**
 	 * @brief Gets the field that is used to track the version of this record, if one
@@ -2535,7 +2569,7 @@ class Dataface_Table {
 		// First we will see if the delegate class defines as custom description.
 		$delegate =& $this->getDelegate();
 		$delegate_property_name = str_replace(':', '_', $propertyName);
-		if ( method_exists($delegate, $fieldname.'__'.$delegate_property_name) ){
+		if (isset($delgate) and method_exists($delegate, $fieldname.'__'.$delegate_property_name) ){
 
 			if ( !isset( $params['record'] ) ) $params['record'] = null;
 			$methodname = $fieldname.'__'.$delegate_property_name;
@@ -2607,7 +2641,7 @@ class Dataface_Table {
 		$conf = array_merge($gConf, $conf);
 		$app =& Dataface_Application::getInstance();
 		$appDel =& $app->getDelegate();
-		if ( method_exists($appDel,'decorateFieldsINI') ){
+		if (isset($appDel) and method_exists($appDel,'decorateFieldsINI') ){
 			$appDel->decorateFieldsINI($conf, $this);
 		}
 
@@ -3057,7 +3091,7 @@ class Dataface_Table {
 
 			foreach ($this->_filters as $key=>$value){
 				if ( isset($this->_securityFilter[$key]) ) continue;
-				if ( $value{0} == '$' ){
+				if ( $value[0] == '$' ){
 					if ( !$user and strpos($value, '$user') !== false ) continue;
 					eval('$filter[$key] = "=".'.$value.';');
 				} else if ( substr($value,0,4) == 'php:' ){
@@ -3466,17 +3500,25 @@ class Dataface_Table {
 	 * @return string The table's label.
 	 */
 	function getLabel(){
-            if ( !@$this->_atts['label'] ){
-                $this->_atts['label'] = ucwords(str_replace('_', ' ', $this->tablename));
-            }
-            if ( !@$this->_atts['label__translated']){
-                $this->_atts['label__translated'] = true;
-                $this->_atts['label'] = df_translate('tables.'.$this->tablename.'.label', $this->_atts['label']);
+        if ( !@$this->_atts['label'] ){
+            $this->_atts['label'] = ucwords(str_replace('_', ' ', $this->tablename));
+        }
+        if ( !@$this->_atts['label__translated']){
+            $this->_atts['label__translated'] = true;
+            $this->_atts['label'] = df_translate('tables.'.$this->tablename.'.label', $this->_atts['label']);
 
-            }
-            return $this->_atts['label'];
+        }
+        return $this->_atts['label'];
 
 	}
+    
+    function getPageTitleForAction($actionName) {
+        $key = $actionName.'.pageTitle';
+        if (@$this->_atts[$key]) {
+            return $this->_atts[$key];
+        }
+        return $this->getLabel();
+    }
     
     function getListStyle() {
         if (@$this->_atts) {
@@ -4012,7 +4054,7 @@ class Dataface_Table {
 		if ( !isset($this->_cookedValuelists[$name]) ){
 			$this->_cookedValuelists[$name] = null;
 			$delegate =& $this->getDelegate();
-			if ( method_exists($delegate, 'valuelist__'.$name) ){
+			if (isset($delegate) and method_exists($delegate, 'valuelist__'.$name) ){
 				$res = call_user_func(array(&$delegate, 'valuelist__'.$name));
 				if ( is_array($res) ) $this->_cookedValuelists[$name] = $res;
 			}
@@ -4485,7 +4527,7 @@ class Dataface_Table {
 	 */
 
 
-
+    private $checkedDelegate;
 	/**
 	 * @brief Returns a reference to the Table's delegate class.
 	 * @return DelegateClass
@@ -4493,7 +4535,8 @@ class Dataface_Table {
 	 */
 	function &getDelegate(){
 		$out = null;
-		if ( !isset( $this->_delegate ) ){
+		if ( !$this->checkedDelegate ){
+            $this->checkedDelegate = true;
 			if ( $this->_hasDelegateFile() ){
 
 				$this->_loadDelegate();
@@ -4559,7 +4602,7 @@ class Dataface_Table {
 				}
 			}
 
-			if ( method_exists($this->_delegate, 'tablePermissions') ){
+			if ( isset($this->_delegate) and method_exists($this->_delegate, 'tablePermissions') ){
 				// table permissions are now just done inside the getPermissions() method.
 				// so the tablePermissions() method is no longer supported.  Let the developer
 				// know in case he has old code.
@@ -5531,7 +5574,7 @@ class Dataface_Table {
 			} else if ( !$isEmpty and isset($field['money_format']) ){
 
 				$fieldLocale = null;
-				if ( method_exists($delegate, 'getFieldLocale') ){
+				if ( isset($delegate) and method_exists($delegate, 'getFieldLocale') ){
 					$fieldLocale = $delegate->getFieldLocale($this, $fieldname);
 
 				}
@@ -5570,7 +5613,7 @@ class Dataface_Table {
 
 
 			$fieldLocale = null;
-			if ( method_exists($delegate, 'getFieldLocale') ){
+			if ( isset($delegate) and method_exists($delegate, 'getFieldLocale') ){
 				$fieldLocale = $delegate->getFieldLocale($this, $fieldname);
 
 			}

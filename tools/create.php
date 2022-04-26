@@ -1,5 +1,6 @@
 <?php
 ini_set('display_errors', 'on');
+ini_set('memory_limit', '2048M');
 error_reporting(E_ALL);
 
 if (php_sapi_name() != "cli") {
@@ -16,7 +17,7 @@ function help() {
 function extract_flags($args) {
     $out = array();
     foreach ($args as $arg) {
-        if ($arg and $arg{0} == '-') {
+        if ($arg and $arg[0] == '-') {
             if (($pos = strpos($arg, '=')) !== false) {
                 $out[substr($arg, 1, $pos)] = substr($arg, $pos+1);
             } else {
@@ -29,8 +30,19 @@ function extract_flags($args) {
 function strip_flags($args) {
     $out = array();
     foreach ($args as $arg) {
-        if ($arg and $arg{0} != '-') {
+        if ($arg and $arg[0] != '-') {
             $out[] = $arg;
+        }
+    }
+    return $out;
+}
+function get_bootstrap_sql($args) {
+    $out = [];
+    foreach ($args as $arg) {
+        if (strstr($arg, ".sql") === ".sql") {
+            if (file_exists($arg)) {
+                $out[] = $arg;
+            }
         }
     }
     return $out;
@@ -45,11 +57,12 @@ function xf_create_run($argv) {
 	}
 	$p = $argv[1];
 	echo "Create project at {$p}\n";
-	$proj = new XFPRoject($p);
+	$proj = new XFProject($p);
 	if (@$flags['db.name']) {
 	    $proj->dbName = $flags['db.name'];
 	}
-
+    $proj->bootstrapSqlFiles = get_bootstrap_sql($argv);
+    
 	$proj->create_scaffold();
 }
 if (@$argv) {

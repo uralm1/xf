@@ -37,6 +37,8 @@ import( XFROOT.'Dataface/DB.php'); // for Blob registry.
 define('QUERYBUILDER_ERROR_EMPTY_SELECT', 1);
 
 class Dataface_QueryBuilder {
+    
+    private $alwaysAddOrderBy = true;
 
 	/**
 	 * Associative array containing the query.
@@ -137,9 +139,17 @@ class Dataface_QueryBuilder {
 		$this->action = null;
 
 		$app =& Dataface_Application::getInstance();
-		if ( @$app->_conf['metadata_enabled'] ){
+		if ( !empty($app->_conf['metadata_enabled']) ){
 			$this->metadata = true;
 		}
+        if (isset($app->_conf['default_order_by_primary_key']) and !$app->_conf['default_order_by_primary_key']) {
+            // Newer versions of MariaDB work MUCH better if you provide an order by clause always
+            $this->alwaysAddOrderBy = false;
+        }
+        if (strstr($tablename, '_tmp_') === $tablename) {
+            
+            $this->alwaysAddOrderBy = false;
+        }
 
 		$keys = array_keys( $this->_query );
 		foreach ($keys as $key){
@@ -627,9 +637,9 @@ class Dataface_QueryBuilder {
         $collate = @$field['collate'];
         if (!$collate) $collate = '';
         if (strlen($value) > 6 and
-            $value{0} == '~' and
-            $value{1} == '#' and
-            $value{strlen($value)-1} == '#' and
+            $value[0] == '~' and
+            $value[1] == '#' and
+            $value[strlen($value)-1] == '#' and
             ($commandParts = explode('#', $value)) and
             count($commandParts) === 4) {
             $value = trim($commandParts[1]);
@@ -676,7 +686,7 @@ class Dataface_QueryBuilder {
 		foreach ($words as $value){
 			if ( $value === '' ) continue;
 			// A value with a prefix of '=' indicates that this is an exact match
-			if ( $value{0}=='=' ){
+			if ( $value[0]=='=' ){
 				$exact = true;
 				$value = substr($value,1);
 			} else {
@@ -1134,17 +1144,29 @@ class Dataface_QueryBuilder {
 	 * Returns the ORDER BY clause of the SQL query.
 	 */
 	function _orderby($query = array()){
-		$query = array_merge( $this->_query, $query);
+        $query = array_merge( $this->_query, $query);
 		foreach ($query as $key=>$value) {
 			if ( $value === null ){
 				unset($query[$key]);
 			}
 		}
+		if (empty($query['-sort']) and $this->alwaysAddOrderBy) {
+		    $defaultSort = $this->_table->getAttribute('default_sort');
+		    if (empty($defaultSort)) {
+		        $keys = array_keys($this->_table->keys());
+                if (!empty($keys)) {
+                    $defaultSort = $keys[0];
+                }
+		    }
+		    if (!empty($defaultSort)) {
+		        $query['-sort'] = $defaultSort;
+		    }
+		}
 
-		if ( isset($query['-sort']) ){
+		if ( !empty($query['-sort'])  ){
 
 			return 'ORDER BY '.preg_replace_callback('/\b(\w+?)\b/',array(&$this, '_mysql_quote_idents'), $query['-sort']);
-		}
+		} 
 		return '';
 
 	}

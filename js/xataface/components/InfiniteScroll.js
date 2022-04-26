@@ -25,7 +25,7 @@
         }
         
         if (!this.scrollEl) {
-            this.scrollEl = document.querySelector('body');
+            this.scrollEl = document;
         }
         
         if (!this.parentEl) {
@@ -54,16 +54,26 @@
         }
         
         var self = this;
-        $(this.scrollEl).on('scroll', function() {
+
+        document.addEventListener('scroll', function(event) {
             if (self.reachedEnd) {
                 return;
             }
-            //console.log('1', self.scrollEl.scrollTop, self.scrollEl.clientHeight, self.scrollEl.scrollTop + self.scrollEl.clientHeight, self.scrollEl.scrollHeight);
-            if (self.scrollEl.scrollTop + self.scrollEl.clientHeight >= self.scrollEl.scrollHeight) {
-                //console.log(2);
+
+            var scrollTop = self.scrollEl.scrollTop;
+            var clientHeight = self.scrollEl.clientHeight;
+            var scrollHeight = self.scrollEl.scrollHeight;
+            if (self.scrollEl === document.body) {
+                // For some reason scrolling on the body reports the clientHeight to be the full scroll height
+                // in some cases.
+                scrollTop = document.documentElement.scrollTop;
+                clientHeight = Math.min(window.innerHeight, clientHeight);
+            }
+            
+            if (scrollTop + clientHeight >= scrollHeight) {
                 self.loadMore();
             }
-        });
+        }, true);
     }
     
     /**
@@ -105,7 +115,11 @@
             .replace(/\?-skip=[^&]*/, '?')
             .replace(/&-limit=[^&]*/, '')
             .replace(/\?-limit=[^&]*/, '?');
-        currentQuery += '&-skip='+skip+'&-limit='+pageSize;
+        var joinChar = '&';
+        if (currentQuery.indexOf('?') < 0) {
+            joinChar = '?';
+        }
+        currentQuery += joinChar + '-skip='+skip+'&-limit='+pageSize;
         return currentQuery;
     }
     
@@ -131,9 +145,9 @@
             .replace(/&-related%3Astart=[^&]*/, '')
             .replace(/&-related%3Alimit=[^&]*/, '')
             .replace(/\?-related%3Alimit=[^&]*/, '?');
-            //console.log("Query", currentQuery);
+          
         currentQuery += '&' + encodeURIComponent('-related:start') + '='+skip+'&'+encodeURIComponent('-related:skip')+'='+skip+'&' +encodeURIComponent('-related:limit')+'='+pageSize + '&-action=' + encodeURIComponent(action);
-        console.log('q=',currentQuery);
+        
         return currentQuery;
     }
     

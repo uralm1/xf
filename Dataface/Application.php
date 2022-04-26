@@ -303,6 +303,37 @@ END;
 	 * @private
 	 */
 	var $sessionCookieKey;
+    
+    /**
+     * Array to keep track of "marks" on the cache.
+     * @see #markCache($table, $user)
+     *
+     * Structure:
+     * [
+     *      'app' => boolean, 
+     *      'users' => [$username => boolean], 
+     *      'tables' => [$tablename => [
+     *          'app' => boolean,
+     *          'users' => [
+     *              $username => boolean
+     *          ]
+     *      ]
+     * ]
+     * 
+     * $versionUpdates['app'] == true => Entire app requires cache update
+     * $versionUpdates['users'][$username] == true => Entire app requires cache update for user $username
+     * $versionUpdates['tables'][$tablename]['app'] == true => Table $tablename requires cache update for all users.
+     * $versionUpdates['tables'][$tablename]['users'][$username] == true => Table $tablename requires cache update for user $username
+     *
+     * There is no guarantee, at the end of the request that this structure or any of its keys will be non-null/defined
+     * do you will need to test before using.
+     * 
+     * The markCache($table, $user) method includes all logic for updating this structure.  Generally changes to the
+     * structure should only be made through that method.
+     *
+     * @since 3.0
+     */
+    private $versionUpdates;
 
 
 	/**
@@ -715,6 +746,7 @@ END;
                                 $host = substr($host, 0, $colonPos);
                             }
                             $port = intval($port);
+                            
                             $i = str_replace('{host}', preg_replace('/[^0-9a-zA-Z\.\-]/','', basename($host)), $i);
                             $i = str_replace('{port}', $port, $i);
                         }
@@ -776,11 +808,35 @@ END;
 			//if ( @$dbinfo['persistent'] ){
 			//	$this->_db = xf_db_pconnect( $dbinfo['host'], $dbinfo['user'], $dbinfo['password'] );
 			//} else {
+                $useEnv = false;
+                if (strpos($dbinfo['host'], '$') === 0) {
+                    $parts = explode('|', $dbinfo['host']);
+                    $dbinfo['host'] = @$_ENV[substr($parts[0], 1)];
+                    if (!$dbinfo['host'] and count($parts) > 1) {
+                        $dbinfo['host'] = $parts[1];
+                    }
+                    $useEnv = true;
+                }
+                if (strpos($dbinfo['user'], '$') === 0) {
+                    $parts = explode('|', $dbinfo['user']);
+                    $dbinfo['user'] = @$_ENV[substr($parts[0], 1)];
+                    if (!$dbinfo['user'] and count($parts) > 1) {
+                        $dbinfo['user'] = $parts[1];
+                    }
+                    $useEnv = true;
+                }
+                if ($useEnv and strpos($dbinfo['password'], '$') === 0) {
+                    $parts = explode('|', $dbinfo['password']);
+                    $dbinfo['password'] = @$_ENV[substr($parts[0], 1)];
+                    if (!$dbinfo['password'] and count($parts) > 1) {
+                        $dbinfo['password'] = $parts[1];
+                    }
+                }
 
 			$this->_db = xf_db_connect( $dbinfo['host'], $dbinfo['user'], $dbinfo['password'] );
 			//}
 			if ( !$this->_db ){
-				throw new Exception('Error connecting to the database: '.xf_db_error());
+				throw new Exception('Error connecting to the database: '.xf_db_connect_error());
 
 			}
 			$this->mysqlVersion = xf_db_get_server_info($this->_db);
@@ -843,7 +899,9 @@ END;
 		}
 
 		// Include XataJax module always.
-		$mods = array('modules_XataJax'=>'modules/XataJax/XataJax.php');
+		$mods = [
+            'modules_XataJax'=>'modules/XataJax/XataJax.php'
+        ];
 
 		// We used to make g2 the default, but
 		// starting with version 3.0, we will be going back to the default
@@ -985,11 +1043,24 @@ END;
 
 		if ( !isset($this->_conf['default_table'] ) ){
 			// The default table is the table that is used if no other table is specified.
-			foreach ($this->_tables as $key=>$value){
-				$this->_conf['default_table'] = $key;
-
-				break;
-			}
+            
+            if (isset($this->_conf['default_tables']) and !empty($_REQUEST['-action'])) {
+                
+                if (!empty($this->_conf['default_tables'][$_REQUEST['-action']])) {
+                    $defaultTable = $this->_conf['default_tables'][$_REQUEST['-action']];
+                    if ($defaultTable == '_') {
+                        $defaultTable = '_tmp_null';
+                    }
+                    $this->_conf['default_table'] = $defaultTable;
+                }
+            }
+            if (!isset($this->_conf['default_table'])) {
+    			foreach ($this->_tables as $key=>$value){
+    				$this->_conf['default_table'] = $key;
+    				break;
+    			}
+            }
+			
 		}
 
 		if ( !isset($this->_conf['auto_load_results']) ) $this->_conf['auto_load_results'] = false;
@@ -1115,7 +1186,7 @@ END;
 		if ( isset($_REQUEST['__keys__']) and is_array($_REQUEST['__keys__']) ){
 			$query = $_REQUEST['__keys__'];
 			foreach ( array_keys($_REQUEST) as $key ){
-				if ( $key{0} == '-' and !in_array($key, array('-search','-cursor','-skip','-limit'))){
+				if ( $key[0] == '-' and !in_array($key, array('-search','-cursor','-skip','-limit'))){
 					$query[$key] = $_REQUEST[$key];
 				}
 			}
@@ -1183,14 +1254,20 @@ END;
 
 		$this->rawQuery = $query;
 
-		if ( !isset( $query['-table'] ) ) {
+		if ( empty( $query['-table'] ) ) {
+            if (!empty($query['-action'])) {
+                
+                if (!empty($this->_conf['default_table.'.$query['-action']])) {
+                    $this->_conf['default_table'] = $this->_conf['default_table.'.$query['-action']];
+                }
+            }
 		    $query['-table'] = $this->_conf['default_table'];
             $this->_conf['using_default_table'] = true;
 		}
 		$this->_currentTable = $query['-table'];
 
 
-		if ( !@$query['-action'] ) {
+		if ( empty($query['-action']) ) {
 			$query['-action'] = $this->_conf['default_action'];
             if (@$this->_conf['default_action.'.$this->_currentTable]) {
                 $query['-action'] = $this->_conf['default_action.'.$this->_currentTable];
@@ -1198,7 +1275,7 @@ END;
             
 			$this->_conf['using_default_action'] = true;
 		}
-        if (@$this->_conf['using_default_action'] and isset($this->_conf['default_params.'.$this->_currentTable])) {
+        if (!empty($this->_conf['using_default_action']) and isset($this->_conf['default_params.'.$this->_currentTable])) {
             $defaultParams = $this->_conf['default_params.'.$this->_currentTable];
             if (is_string($defaultParams)) {
                 parse_str($defaultParams, $defaultParams);
@@ -1292,6 +1369,258 @@ END;
 
 
 	}
+    
+    
+    
+    /**
+     * Method for caching plugins that retrieves a list of the "caching" commands that should be 
+     * executed.  This will return an array of "commands".  Each "command" is an array with two 
+     * keys: "user" and "table", indicating whether the "user", "table", both or neither need to
+     * have their content versions incremented.
+     * #cache
+     *
+     * Data structure:
+     *
+     * [
+     *   ['table' => $tablename:string, 'user' => $username:string]
+     * ]
+     *
+     * Meaning of commands:
+     *. 1. If $tablename and $username are both empty strings, then the command is to increment
+     *      the app version.
+     *. 2. If the $tablename is empty string but $username is not empty, then the command is to increment
+     *      the app version for the given username.
+     * 3. If the $tablename and $username are both non-empty, then the command is to increment the 
+     *      table version for the given user.
+     * 4. If the $tablename is non-empty, but the $username is empty, then the command is to increment
+     *   the table version for all users.
+     */
+    public function getCacheUpdates() {
+        $out = [];
+        if (!@$this->versionUpdates) return $out;
+        
+        if (@$this->versionUpdates['app']) {
+            $out[] = ['table' => '', 'user' => ''];
+            return $out;
+        }
+        if (@$this->versionUpdates['users']) {
+            foreach ($this->versionUpdates['users'] as $k => $v) {
+                if ($v) {
+                    $out[] = ['table' => '', 'user' => $k];
+                }
+            }
+        }
+        if (@$this->versionUpdates['tables']) {
+            foreach ($this->versionUpdates['tables'] as $k => $tableData) {
+                if (@$tableData['app']) {
+                    $out[] = ['table' => $k, 'user' => ''];
+                } else if (@$tableData['users']) {
+                    foreach ($tableData['users'] as $uk => $uVal) {
+                        if ($uVal) {
+                            $out[] = ['table' => $k, 'user' => $uk];
+                        }
+                    }
+                }
+            }
+        }
+        return $out;
+    }
+    
+    private $manifest;
+    public function &getManifest() {
+        if (!isset($this->manifest)) {
+            $manifestPath = XFTEMPLATES_C.'manifest-'.df_get_database_version().'.php';
+            if (file_exists($manifestPath)) {
+                
+                include $manifestPath;
+                $this->manifest = &$__manifest;
+            } else {
+                $this->updateManifest(df_get_database_version());
+            }
+            
+        }
+        return $this->manifest;
+    }
+    
+    private function updateManifest($version) {
+
+        $manifest = [];
+        foreach ([XFROOT, XFAPPROOT] as $root) {
+            $directory = new \RecursiveDirectoryIterator($root);
+            $iterator = new \RecursiveIteratorIterator($directory);
+        
+            foreach ($iterator as $info) {
+                $pathname = $info->getPathname();
+                if (preg_match('/\.(php|ini|js|html|css)$/', $pathname)) {
+                    $manifest[$pathname] = true;
+                }
+            }
+        }
+        
+        
+        $manifestContents = '<'.'?php'."\n\$__manifest = ".var_export($manifest, true).';';
+        $manifestPath = XFTEMPLATES_C . 'manifest-'.$version.'.php';
+
+        $res = file_put_contents($manifestPath, $manifestContents, LOCK_EX);
+        if ($res === false) {
+            echo "Failed to update manifest.  Could not write contents to ".$manifestPath;
+            exit;
+        } else {
+            if (!file_exists($manifestPath)) {
+                echo "Manifest still doesn't exist after writing it";
+                exit;
+            } else {
+                //echo "Wrote the manifest at $manifestPath";
+                //echo file_get_contents($manifestPath);
+                //exit;
+            }
+        }
+
+        $this->manifest = $manifest;
+        
+    }
+    
+    /**
+     * Calling this method instructs Xataface to NOT cache the current response using the 
+     * scaler module. #cache
+     * @since 3.0
+     */
+    public function nocache() {
+        $this->_conf['nocache'] = true; 
+    }
+    
+    public function cache() {
+        $this->_conf['nocache'] = false;
+    }
+    
+    /**
+     * Sets the cache expiry in seconds.  This is used by the Scaler module
+     * to set the memcache expiry.#cache
+     * @since 3.0
+     */
+    public function setCacheExpiry($expires) {
+        $this->_conf['cache_expiry'] = $expires;
+    }
+    
+    /**
+     * Gets the cache expiry in seconds.  #cache
+     * @return mixed The cache expiry for this response.  Or null if none is explicitly set.
+     * @since 3.0
+     */
+    public function getCacheExpiry() {
+        if (isset($this->_conf['cache_expiry'])) {
+            return $this->_conf['cache_expiry'];
+        }
+        return null;
+    }
+    
+    
+    
+    /**
+     * Marks the cache for a particular user/table combination to provide hints
+     * to caching solution that it should invalidate its cache for that table/user
+     * combination at the end of the request. #cache
+     * 
+     * @param string $table The table name or null.  If null is provided, then this applies to all tables.
+     * @param string $user The username of the user or null.  If null is provided then this applies to all users.
+     * @return void
+     * @since 3.0
+     */
+    public function markCache($table = null, $user = null) {
+        if (!isset($this->versionUpdates)) {
+            $this->versionUpdates = [];
+        }
+        if (@$this->versionUpdates['app']) {
+            // If we are already updating the entire app, then we don't need to 
+            // do anything.  The entire thing is invalidated.
+            return;
+        }
+        if (!$table and !$user) {
+            // This updates the entire application version.
+            if (!@$this->versionUpdates['app']) {
+                $this->versionUpdates['app'] = true;
+            }
+            if (isset($this->versionUpdates['users'])) {
+                unset($this->versionUpdates['users']);
+            }
+            if (isset($this->versionUpdates['tables'])) {
+                unset($this->versionUpdates['tables']);
+            }
+            return;
+        }
+
+        if ($table and !$user) {
+            // This updates a particular table
+            if (!isset($this->versionUpdates['tables'])) {
+                $this->versionUpdates['tables'] = [];
+            }
+            $tables =& $this->versionUpdates['tables'];
+            if (!isset($tables[$table])) {
+                // This is our first foray into this table.
+                // we initialize it with the 'app' key true
+                // to indicate that the table is invalidated app-wide
+                $tables[$table] = ['app' => true];
+                return;
+            }
+            $tableData =& $tables[$table];
+            if (@$tableData['app']) {
+                // This table is already invalidated app-wide, so we don't need to do anything.
+                return;
+            }
+            
+            if (isset($tableData['users'])) {
+                // If we previously invalidated a particular user for this table,
+                // we don't need that anymore because we are invalidating the whole table.
+                unset($tableData['users']);
+            }
+            // We set the 'app' key true to indicate that this table is invalidated app-wide
+            $tableData['app'] = true;
+            return;
+            
+        }
+        
+        if (!$table and $user) {
+            // This updates a particular user app-wide
+            if (!isset($this->versionUpdates['users'])) {
+                $this->versionUpdates['users'] = [];
+            }
+            $users =& $this->versionUpdates['users'];
+            if (!@$users[$user]) {
+                $users[$user] = true;
+            }
+            return;
+        }
+        
+        if ($table and $user) {
+            // Invalidating particular user for particular table.
+            if (!isset($this->versionUpdates['tables'])) {
+                $this->versionUpdates['tables'] = [];
+            }
+            $tables =& $this->versionUpdates['tables'];
+            if (!isset($tables[$table])) {
+                // This is our first foray into this table.
+                // we initialize it with the 'app' key true
+                // to indicate that the table is invalidated app-wide
+                $tables[$table] = [];
+            }
+            $tableData =& $tables[$table];
+            if (@$tableData['app']) {
+                // This table is already invalidated for entire app
+                // we don't need to invalidate for this user.
+                return;
+            }
+            if (!isset($tableData['users'])) {
+                $tableData['users'] = [];
+            }
+            
+            $tableData['users'][$user] = true;
+            return;
+        }
+        
+        
+        
+        
+    }
 
 
 	/**
@@ -1431,7 +1760,7 @@ END
 			if ( ($record = $this->getRecord()) && $query['-mode'] == 'browse'  ){
                 $out = $record->getTitle();
             } else {
-                $tableLabel = Dataface_Table::loadTable($query['-table'])->getLabel();
+                $tableLabel = Dataface_Table::loadTable($query['-table'])->getPageTitleForAction($query['-action']);
                 $out = $tableLabel;
 
             }
@@ -1582,6 +1911,18 @@ END
 
 	}
 	
+    function getTable() {
+        return Dataface_Table::loadTable($this->_query['-table']);
+    }
+    
+    function getRelationship() {
+        if (!$this->_query['-relationship']) return null;
+        $table = $this->getTable();
+        if (!$table) return null;
+        $relationship = $table->getRelationship($this->_query['-relationship']);
+        //echo "Relationship label ". $relationship->getLabel();
+        return $relationship;
+    }
 	
 	function &getRecords() {
 		$rs =& $this->getResultSet();
@@ -1661,6 +2002,17 @@ END
 				$this->currentRecord = $rs->loadCurrent();
 			}
 			if ( $this->currentRecord === null ) $this->currentRecord = -1;
+            
+            if ($this->currentRecord instanceof Dataface_RelatedRecord) {
+                $asRec = $this->currentRecord->toRecord();
+                
+                
+                if (!$this->recordContext) {
+                    $this->recordContext = [];
+                }
+                $this->recordContext[$asRec->getId()] = $this->currentRecord;
+                $this->currentRecord = $asRec;
+            }
 		}
 		if ( $this->currentRecord === -1 || !$this->currentRecord ) return $null;
 		return $this->currentRecord;
@@ -1741,6 +2093,10 @@ END
 			unset($contextMasks[$k]);
 		}
 	}
+    
+    public function incrementVersion($tableName = null, $userName = null) {
+        
+    }
 
 	/**
 	 * @brief Checks is the current record has been loaded yet.
@@ -2091,7 +2447,7 @@ END
 				}
 
 				if (strlen($cookie_path)==0) $cookie_path = '/';
-				if ( $cookie_path{strlen($cookie_path)-1} != '/' ) $cookie_path .= '/';
+				if ( $cookie_path[strlen($cookie_path)-1] != '/' ) $cookie_path .= '/';
 
 				// timeout value for the cookie
 				$cookie_timeout = (isset($conf['session_timeout']) ? intval($conf['session_timeout']) : 0);
@@ -2128,7 +2484,7 @@ END
 						 $sessdir = substr($sessdir, strpos($sessdir, ";")+1);
 					}
 					if ( !$sessdir ) $sessdir = sys_get_temp_dir(); //'/tmp';
-					if ( $sessdir and $sessdir{strlen($sessdir)-1} == '/' ) $sessdir = substr($sessdir,0, strlen($sessdir)-1);
+					if ( $sessdir and $sessdir[strlen($sessdir)-1] == '/' ) $sessdir = substr($sessdir,0, strlen($sessdir)-1);
 
 					if ( @$conf['subdir'] ) $subdir = $conf['subdir'];
 					else $subdir = md5(DATAFACE_SITE_PATH);
@@ -2598,7 +2954,7 @@ END
         foreach ($modulesDirs as $modulesDir) {
             if (is_dir($modulesDir)) {
                 foreach (scandir($modulesDir) as $moduleDir) {
-                    if ($moduleDir{0} == '.') {
+                    if ($moduleDir[0] == '.') {
                         continue;
                     }
                     $moduleDirPath = $modulesDir . DIRECTORY_SEPARATOR . $moduleDir;
@@ -2614,7 +2970,7 @@ END
             
             if (is_dir($tablesDir)) {
                 foreach (scandir($tablesDir) as $tableDir) {
-                    if ($tableDir{0} == '.') {
+                    if ($tableDir[0] == '.') {
                         continue;
                     }
                     $tableDirPath = $tablesDir . DIRECTORY_SEPARATOR . $tableDir;
@@ -2663,7 +3019,7 @@ END
 	function handleRequest($disableCache=false){
 
 
-		if ( !$disableCache and (@$_GET['-action'] != 'getBlob') and isset( $this->_conf['_output_cache'] ) and @$this->_conf['_output_cache']['enabled'] and count($_POST) == 0){
+		if ( !$disableCache and (@$_GET['-action'] != 'getBlob') and isset( $this->_conf['_output_cache'] ) and @$this->_conf['_output_cache']['enabled'] and empty($_POST) == 0){
 			import(XFROOT.'Dataface/OutputCache.php');
 			$oc = new Dataface_OutputCache($this->_conf['_output_cache']);
 			$oc->ob_start();
@@ -2672,7 +3028,7 @@ END
 		import(XFROOT.'Dataface/ActionTool.php');
 		import(XFROOT.'Dataface/PermissionsTool.php');
 		import(XFROOT.'Dataface/Table.php');
-
+        
 		if ( isset($this->_conf['_modules']) and count($this->_conf['_modules']) > 0 ){
 			$mt = Dataface_ModuleTool::getInstance();
 			foreach ($this->_conf['_modules'] as $modname=>$modpath){
@@ -2814,7 +3170,7 @@ END
 		$disallowed = false;
 		if ( isset($this->_conf['_disallowed_tables']) ){
 			foreach ( $this->_conf['_disallowed_tables'] as $name=>$pattern ){
-				if ( $pattern{0} == '/' and preg_match($pattern, $query['-table']) ){
+				if ( $pattern[0] == '/' and preg_match($pattern, $query['-table']) ){
 					$disallowed = true;
 					break;
 				} else if ( $pattern == $query['-table'] ){
@@ -2826,7 +3182,7 @@ END
 
 		if ( $disallowed and isset($this->_conf['_allowed_tables']) ){
 			foreach ($this->_conf['_allowed_tables'] as $name=>$pattern ){
-				if ( $pattern{0} == '/' and preg_match($pattern, $query['-table']) ){
+				if ( $pattern[0] == '/' and preg_match($pattern, $query['-table']) ){
 					$disallowed = false;
 					break;
 				} else if ( $pattern == $query['-table'] ){
@@ -2934,15 +3290,30 @@ END
 			$action = array('name'=>$query['-action'], 'label'=>$query['-action']);
 		}
 
-        if (@$action['page_menu_category']) {
+        if (!empty($action['page_menu_category'])) {
             $this->_conf['page_menu_category'] = $action['page_menu_category'];
+        }
+        if (!empty($action['nocache'])) {
+            $this->nocache();
+        }
+        if ($table->getAttribute('nocache')) {
+            $this->nocache();
         }
 		// Step 1:  See if the delegate class has a handler.
 
 		$delegate = $table->getDelegate();
 		$handled = false;
-		if ( method_exists($delegate,'handleRequest') ){
-			$result = $delegate->handleRequest();
+		if ( isset($delegate) and method_exists($delegate,'handleRequest') ){
+            try {
+                $result = $delegate->handleRequest();
+            } catch (xf\core\XFException $ex) {
+                if ($ex->getClientErrorCode() >= 400 and $ex->getClientErrorCode() < 500) {
+                    $result = Dataface_Error::permissionDenied($ex->getClientErrorMessage(), ['cause' => $ex]);
+                } else {
+                    throw $ex;
+                }
+            }
+			
 			if ( PEAR::isError($result) and $result->getCode() === DATAFACE_E_REQUEST_NOT_HANDLED ){
 				$handled = false;
 			} else if ( PEAR::isError($result) ){
@@ -2966,7 +3337,7 @@ END
 				$mt = Dataface_ModuleTool::getInstance();
 				foreach ($this->_conf['_modules'] as $modname=>$modpath){
 					$mt->loadModule($modname);
-					if ( $modpath{0} == '/' )
+					if ( $modpath[0] == '/' )
 						$locations[ dirname($modpath).'/actions/'.basename($query['-action']).'.php' ] = 'actions_'.$query['-action'];
 					else {
 						$locations[ DATAFACE_SITE_PATH.'/'.dirname($modpath).'/actions/'.basename($query['-action']).'.php' ] = 'actions_'.$query['-action'];
@@ -3069,10 +3440,17 @@ END
 
 				}
 
-				if ( method_exists($handler, 'handle') ){
+				if (isset($handler) and method_exists($handler, 'handle') ){
 
-
-					$result = $handler->handle($doParams);
+                    try {
+                        $result = $handler->handle($doParams);
+                    } catch (xf\core\XFException $ex) {
+                        if ($ex->getClientErrorCode() >= 400 and $ex->getClientErrorCode() < 500) {
+                            $result = Dataface_Error::permissionDenied($ex->getClientErrorMessage(), ['cause' => $ex]);
+                        } else {
+                            throw $ex;
+                        }
+                    }
 					if ( PEAR::isError($result) and $result->getCode() === DATAFACE_E_REQUEST_NOT_HANDLED ){
 						continue;
 					}
@@ -3113,13 +3491,16 @@ END
 				}
 				$resp['errorMessage'] = $errorMessage;
 				$resp['errorCode'] = $errorCode;
+                $this->nocache();
 				echo json_encode($resp);
 				exit;
 			}
 			if ($ex->getCode() == DATAFACE_E_NOTICE) {
+                $this->nocache();
 				df_display(array('body'=>'<div class="portalMessageWrapper"><div class="responsive-content"><div class="portalMessage"><ul><li>'.htmlspecialchars($ex->getMessage()).'</li></ul></div></div></div>'), 'Dataface_Main_Template.html');
 				return;
 			}
+            $this->nocache();
 			$uuid = df_error_log($ex);
 			header('HTTP/1.0 500 Internal Server Error', true);
 
@@ -3286,6 +3667,7 @@ END
 		import(XFROOT.'Dataface/Application/blob.php');
 		return Dataface_Application_blob::_handleGetBlob($request);
 	}
+    
 
 
 	// @}
@@ -3412,8 +3794,16 @@ END
 			}
 			//unset($tableObj);
 		}
-		if ( !@$app->_conf['debug'] ){
-			@eval('$parsed = "'.$expression.'";');
+        if (defined('XF_PHP8') and !defined('XF_PHP8_STRICT')) {
+            $expression = preg_replace('/\[([a-zA-Z_][a-zA-Z0-9_]*)\]/', '[\'$1\']', $expression);
+        }
+        
+		if ( empty($app->_conf['debug']) ){
+            try {
+			    @eval('$parsed = "'.$expression.'";');
+            } catch (ParseError $e) {
+                throw new Exception('Caught exception while parsing expression '.$expression.' for action property.  Error was: '.$e->getMessage()." while evaluating ".$expression."\n");
+            }
 		} else {
 			eval('$parsed = "'.$expression.'";');
 		}
@@ -3533,6 +3923,9 @@ END
 			}
 			//unset($tableObj);
 		}
+        if (defined('XF_PHP8') and !defined('XF_PHP8_STRICT')) {
+            $condition = preg_replace('/\[([a-zA-Z_][a-zA-Z0-9_]*)\]/', '[\'$1\']', $condition);
+        }
 		if ( !@$this->_conf['debug'] ){
 			return @eval('return ('.$condition.');');
 		} else {

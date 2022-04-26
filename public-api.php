@@ -771,7 +771,13 @@ function df_editable($content, $id){
 	return $skinTool->editable(array('id'=>$id), $content, $skinTool);
 }
 
-function df_offset($date){
+/**
+ * Gets date as an offset (time ago).
+ * @param string $date The date as a string.
+ * @param boolean $long Whether to include the formatted date and the offset in the output.
+ * @return string The date offset.
+ */
+function df_offset($date, $long=true){
 	if ( !$date ){
 		return df_translate('scripts.global.MESSAGE_UNKNOWN','Unknown');
 	}
@@ -791,7 +797,12 @@ function df_offset($date){
 	$end=($offset!=0?($offset>1?sprintf($xWeeksAgoStr, $offset):$aWeekAgoStr):$todayStr);
 	} else
 	$end=($offset!=0?($offset>1?sprintf($xDaysAgoStr, $offset):$yesterdayStr):$todayStr);
-	return strftime("%A, %B %d, %Y",$date)." - ". $end;
+    if ($long) {
+        return strftime("%A, %B %d, %Y",$date)." - ". $end;
+    } else {
+        return $end;
+    }
+	
 }
 /**
  * @see Dataface_IO::getByID()
@@ -896,7 +907,7 @@ function df_is_logged_in(){
  */
 function df_absolute_url($url){
 	if ( !$url ) return $_SERVER['HOST_URI'];
-	else if ( $url{0} == '/' ){
+	else if ( $url[0] == '/' ){
 		return $_SERVER['HOST_URI'].$url;
 	} else if ( preg_match('/http(s)?:\/\//', $url) ){
 		return $url;
@@ -904,7 +915,7 @@ function df_absolute_url($url){
 		$host_uri = $_SERVER['HOST_URI'];
 		$site_url = DATAFACE_SITE_URL;
 		if ( $site_url ) {
-			if ($site_url{0} == '/' ) $host_uri = $host_uri.$site_url;
+			if ($site_url[0] == '/' ) $host_uri = $host_uri.$site_url;
 			else $host_uri = $host_uri.'/'.$site_url;
 		}
 		
@@ -1164,11 +1175,11 @@ function df_tz_or_offset(){
 	
     
     function xf_opcache_path($filepath) {
-        return XFAPPROOT . 'templates_c' . DIRECTORY_SEPARATOR . 'xf_opcache' . DIRECTORY_SEPARATOR . basename($filepath) . md5($filepath) . '.php';
+        return XFTEMPLATES_C . 'xf_opcache' . DIRECTORY_SEPARATOR . basename($filepath) . md5($filepath) . '.php';
     }
     
     function xf_opcache_query_path($sql) {
-        return XFAPPROOT . 'templates_c' . DIRECTORY_SEPARATOR . 'xf_opcache_queries' . DIRECTORY_SEPARATOR . md5($sql) . '.php';
+        return XFTEMPLATES_C . 'xf_opcache_queries' . DIRECTORY_SEPARATOR . md5($sql) . '.php';
     }
     
     function xf_opcache_is_query_cached($sql) {
@@ -1220,13 +1231,27 @@ function df_tz_or_offset(){
     }
     
     function xf_is_readable($file) {
+        $app = Dataface_Application::getInstance();
+        $query =& $app->getQuery();
+        
+        if (!empty($app->_conf['use_manifest'])) {
+
+            $manifest = $app->getManifest();
+            if (!empty($manifest)) {
+                            
+                return !empty($manifest[$file]);
+            }
+            
+        }
         return is_readable($file);
         
     }
     
-    
-    
-    
-	
-        
+    function xf_touch($tablename, $record = null) {
+        if (!class_exists('Dataface_IO')) {
+            import(XFROOT.'Dataface/IO.php');
+        }
+        Dataface_IO::touchTable($tablename, $record);
+    }
+      
 } // end if ( !defined( DATAFACE_PUBLIC_API_LOADED ) ){

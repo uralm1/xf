@@ -2357,7 +2357,6 @@ class Dataface_Record {
 		return $this->getValueAsString($fieldname, $index, $where, $sort);
 	}
 
-
 	/**
 	 * @brief Returns the value of a field except it is serialzed to be instered into a database.
 	 *
@@ -2549,6 +2548,14 @@ class Dataface_Record {
 	 *
 	 */
 	function display($fieldname, $index=0, $where=0, $sort=0, $urlencode=true, $thumbnail=null){
+        
+        if (is_array($fieldname)) {
+            $out = [];
+            foreach ($fieldname as $fname) {
+                $out[$fname] = $this->display($fname, $index, $where, $sort, $urlencode, $thumbnail);
+            }
+            return $out;
+        }
 		if (!is_string($fieldname)) {
 			throw new Exception("Expected fieldname to be string but found ".$fieldname);
 		}
@@ -2634,7 +2641,7 @@ class Dataface_Record {
 			    $strvl=rawurlencode($strvl);
 			}
 			$out = $field['url'].'/'.$strvl;
-			if ( strlen($out) > 1 and $out{0} == '/' and $out{1} == '/' ){
+			if ( strlen($out) > 1 and $out[0] == '/' and $out[1] == '/' ){
 				$out = substr($out,1);
 			}
 			$this->cache[__FUNCTION__][$fieldname][$index][$where][$sort] = $out;
@@ -2816,7 +2823,7 @@ class Dataface_Record {
         } else {
             $thumb = @$params['thumbnail'];
             $orBust = true;
-            if ($thumb{-1} == '?') {
+            if ($thumb[strlen($thumb)-1] == '?') {
                 $orBust = false;
                 $thumb = substr($thumb, 0, -1);
             }
@@ -4120,7 +4127,7 @@ class Dataface_Record {
 
 
 		// Case 1: Delegate is defined -- we use the delegate's link
-		if ( method_exists($delegate, $fieldname."__link") ){
+		if ( isset($delegate) and method_exists($delegate, $fieldname."__link") ){
 			$methodname = $fieldname."__link";
 			$link = $delegate->$methodname($this);
 			//$link = call_user_func(array(&$delegate, $fieldname."__link"), $this);

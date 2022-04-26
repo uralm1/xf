@@ -266,6 +266,10 @@ class Dataface_FeedTool {
 		$item->source = $data['source']; 
 		$item->author = $data['author'];
         $item->enclosure = $data['enclosure'];
+        if (!empty($data['podcast'])) {
+            $item->podcast = $data['podcast'];
+        }
+        
 		return $item;
 	}
 	
@@ -296,13 +300,18 @@ class Dataface_FeedTool {
         } else {
             $rss->author= $app->getSiteTitle();
         }
-		
+		if (!empty($feed_data['itunes'])) {
+		    $rss->itunes = $feed_data['itunes'];
+		}
 		//optional
 		//$rss->descriptionTruncSize = 500;
 		//$rss->descriptionHtmlSyndicated = true;
 		
 		$rss->link = htmlentities($feed_data['link']);
 		$rss->syndicationURL = htmlentities($feed_data['syndicationURL']);
+        if (!empty($feed_data['image'])) {
+            $rss->image = (object)$feed_data['image'];
+        }
 		
 		if ( isset($query['-relationship']) ){
 			// Do the related records thing

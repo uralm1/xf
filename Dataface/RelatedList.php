@@ -47,6 +47,9 @@ class Dataface_RelatedList {
     var $hideActions = false;
     var $noLinks = false;
     var $filters = array();
+    // List style allows you to set the style of the list to override default.
+    // Values: auto or mobile
+    var $listStyle = 'auto';
 
     function __construct(&$record, $relname, $db = '') {
         if (!is_a($record, 'Dataface_Record')) {
@@ -58,9 +61,15 @@ class Dataface_RelatedList {
         $this->_relationship_name = $relname;
         $app = & Dataface_Application::getInstance();
         $query = & $app->getQuery();
-
+        
         $this->_table = & $this->_record->_table;
         $this->_relationship = & $this->_table->getRelationship($relname);
+        if ($this->_relationship->isOneToMany()) {
+            $domainTableName = $this->_relationship->getDomainTable();
+            $domainTable = Dataface_Table::loadTable($domainTableName);
+            $this->listStyle = $domainTable->getListStyle();
+        }
+        
 
         $this->_start = isset($query['-related:start']) ? $query['-related:start'] : 0;
         $this->_limit = isset($query['-related:limit']) ? $query['-related:limit'] : 30;
@@ -270,7 +279,7 @@ class Dataface_RelatedList {
         $local_fkey_fields = array();
         foreach ( $fkeys as $fk_table_name => $fk_table_cols ){
         	foreach ( $fk_table_cols as $k=>$v ){
-        		if ( is_string($v) and $v and $v{0} === '$' ){
+        		if ( is_string($v) and $v and $v[0] === '$' ){
         			$local_fkey_fields[$k] = $v;
         		}
         	}
@@ -344,7 +353,7 @@ class Dataface_RelatedList {
         $context['imgIcon'] = $imgIcon;
 
 
-        if (!$this->hideActions) {
+        if (!$this->hideActions and $this->listStyle != 'mobile') {
             $num_related_records = $this->_record->numRelatedRecords($this->_relationship_name, $this->_where);
             $now_showing_start = $this->_start + 1;
             $now_showing_finish = min($this->_start + $this->_limit, $this->_record->numRelatedRecords($this->_relationship_name, $this->_where));
@@ -396,7 +405,7 @@ class Dataface_RelatedList {
                      
                 } else {
                     echo '
-                            <table class="listing relatedList relatedList--' . $this->_tablename . ' relatedList--' . $this->_tablename . '--' . $this->_relationship_name . '" id="relatedList">
+                            <table class="listing relatedList relatedList--' . $this->_tablename . ' relatedList--' . $this->_tablename . '--' . $this->_relationship_name . ' list-style-'.$this->listStyle.'" id="relatedList">
                             <thead>
                             <tr>';
                 
@@ -515,6 +524,7 @@ class Dataface_RelatedList {
 
                 for ($i = $this->_start; $i < ($this->_start + $limit); $i++) {
                     $rowClass = $evenRow ? 'even' : 'odd';
+                    
                     $evenRow = !$evenRow;
 
                     if ($default_order_column and @$perms['reorder_related_records']) {
@@ -533,20 +543,32 @@ class Dataface_RelatedList {
                     $rrec = $this->_record->getRelatedRecord($this->_relationship_name, $i, $this->_where, $sort_columns_str); //new Dataface_RelatedRecord($this->_record, $this->_relationship_name, $this->_record->getValues($fullpaths, $i, 0, $sort_columns_str));
                     $rrecid = $rrec->getId();
                     $rowPerms = $rrec->getPermissions();
+                    
+                    
+                    
                     if ( !@$rowPerms['view'] ){
                     	continue;
                     }
+                    $domRec = $rrec->toRecord();
+    				$rowClass .= ' '.$this->getRowClass($domRec);
+                    
+    				$status = $domRec->getStatus();
+                    if ($status) {
+                        $rowClass .= ' xf-record-status-'.$status;
+                    }
                     if ($mobile) {
-                        echo "<div class=\"mobile-listing mobile-listing-row\" id=\"mobile-$row_$rrecid\" xf-record-id=\"$row_$rrecid\">";
+                        
+                        echo "<div class=\"mobile-listing-row $rowClass\" id=\"mobile-$row_$rrecid\" xf-record-id=\"$row_$rrecid\">";
                         
                         
-    				    echo "<div class='mobile-row-content $rowClass' >";
+    				    echo "<div class='mobile-row-content' >";
     				    $logoField = $this->_relationship->getLogoField();
                         $aOpen = '';
                         $aClose = '';
-                        $domRec = $rrec->toRecord();
+                        
                         $rowStyle = $domRec->getTableAttribute('row_style');
-                        if ($link) {
+                        $link = $rrec->getURL();
+                        if ($link and !$this->nolinks and @$rowPerms['link']) {
                             $aOpen = '<a rel="child" href="'.df_escape($link).'">';
                             $aClose = '</a>';
                         }
@@ -715,7 +737,7 @@ class Dataface_RelatedList {
                     $app = & Dataface_Application::getInstance();
                     $q = & $app->getQuery();
                     foreach ($q as $key => $val) {
-                        if (strlen($key) > 1 and $key{0} == '-' and $key{1} == '-') {
+                        if (strlen($key) > 1 and $key[0] == '-' and $key[1] == '-') {
                             continue;
                         }
                         echo '<input type="hidden" name="' . $key . '" value="' . df_escape($val) . '">';
@@ -753,11 +775,20 @@ class Dataface_RelatedList {
 			->import('xataface/actions/related_list.js');
         ob_start();
         $context['filters'] = $this->filters;
+        $context['listStyle'] = $this->listStyle;
         df_display($context, 'xataface/RelatedList/list.html');
         $out = ob_get_contents();
         ob_end_clean();
 
         return $out;
     }
+    
+ 	function getRowClass(&$record){
+ 		$del =& $record->_table->getDelegate();
+ 		if ( isset($del) and method_exists($del, 'css__tableRowClass') ){
+ 			return $del->css__tableRowClass($record);
+ 		}
+ 		return '';
+ 	}
 
 }

@@ -261,15 +261,30 @@
 	description="Subscribe to receive RSS updates when this record is updated"
 
 [related_rss]
-	label=RSS
+	label="RSS"
+    label_prefix="{$app->getRelationship()->getLabel()} "
+    label_prefix_condition="$app->getRelationship()"
 	description="Subscribe to RSS feed of this relationship"
 	url="{$this->url('-action=feed&-mode=list')}&--format=RSS2.0"
-	icon="{$dataface_url}/images/feed-icon-14x14.png"
+	materialIcon=rss_feed
 	permission=rss
-	category=related_list_actions
+	category=record_actions
+    condition="$query['-relationship'] and $query['-action'] == 'related_records_list'"
 	
 [related_xml > export_xml]
-	category=related_list_actions
+	category=related_export_actions
+    
+[related_export_menu]
+    category=record_actions
+    label="Export"
+    label_suffix=" {$app->getRelationship()->getLabel()}"
+    label_suffix_condition="$app->getRelationship()"
+    condition="$query['-action'] == 'related_records_list' and $query['-relationship']"
+    subcategory=related_export_actions
+    order=99
+    materialIcon=file_download
+    
+    
 
 [feed]
 	mode=list
@@ -279,10 +294,12 @@
 	label = Export CSV
 	description = "Export the current result set in comma separated value (CSV) format.  CSV is compatible with most spread sheet applications like MS Excel"
 	url = "{$this->url('-action=export_csv')}&--related=1"
-	icon = "{$dataface_url}/images/table.gif"
+	;icon = "{$dataface_url}/images/table.gif"
+    materialIcon=donut_small
 	mode=list
 	permission=export_csv
-	category=related_list_actions
+	category=related_export_actions
+    condition="$query['-relationship'] and $query['-action'] == 'related_records_list'"
 
 [table_actions]
 	label=""
@@ -363,7 +380,7 @@
 [submit_translation]
 	label = "Submit a translation"
 	description = "Submit your own translation for this section"
-	url = "javascript:window.location='{$this->url('-action=submit_translation')}&--url='+escape(window.location.href)+'&--recordid='+escape('{$context[record_id]}')"
+	url = "javascript:window.location='{$this->url('-action=submit_translation')}&--url='+escape(window.location.href)+'&--recordid='+escape('{$context['record_id']}')"
 	category=translation_warning_actions
 
 [view_original]
@@ -479,6 +496,14 @@
 	label = "Add new {$query['-relationship']} record"
 	related=1
     rel=child
+    
+[new_related_record_menuitem > new_related_record]
+    condition="$query['-action'] == 'related_records_list' and $query['-relationship'] and $app->getRelationship() and $app->getRelationship()->supportsAddNew() and !$app->getRelationship()->supportsAddExisting()"
+    label = "Add {$app->getRelationship()->getSingularLabel()}"
+    materialIcon=add
+    category=record_actions_menu
+    url="{$app->url('-action=new_related_record')}"
+
 
 ;; Show the "Add Existing Related Record" form to add an existing record to a 
 ;; relationship.
@@ -489,6 +514,13 @@
 	category = relationship_actions
 	related=1
     rel=child
+    
+[existing_related_record_menuitem > existing_related_record]
+    condition="$query['-action'] == 'related_records_list' and $query['-relationship'] and $app->getRelationship() and $app->getRelationship()->supportsAddExisting()"
+    label = "Add {$app->getRelationship()->getSingularLabel()}"
+    materialIcon=add
+    category=record_actions_menu
+    url="{$app->url('-action=existing_related_record')}"
 
 ;; Remove record from a relationship
 [remove_related_record]
@@ -598,7 +630,7 @@
 [history_restore_record]
 	category=history_record_actions
 	label = "Restore"
-	url = "javascript: historyToolClient.restoreRecord('{$context[history__id]}')"
+	url = "javascript: historyToolClient.restoreRecord('{$context['history__id']}')"
 	onmouseover = "window.status = 'hello';"
 	description = "Restore the current record to the contents of this history snapshot"
 	permission = edit_history
@@ -845,7 +877,7 @@
 [login_menu_item]
 	category=status_bar_right
 	label="Login"
-	condition="($app->_conf[_auth] and !df_is_logged_in())"
+	condition="($app->_conf['_auth'] and !df_is_logged_in())"
 	materialIcon="security"
 	url="?-action=login"
 	

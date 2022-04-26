@@ -12,7 +12,7 @@ function wrapNode(node,wrappertype,wrapperclass){wrapper=document.createElement(
 wrapper.className=wrapperclass;innerNode=node.parentNode.replaceChild(wrapper,node);wrapper.appendChild(innerNode)}
 var registerXatafaceDecorator=null;var decorateXatafaceNode=null;(function(){var decorators=[];registerXatafaceDecorator=function(decorator){decorators.push(decorator);};decorateXatafaceNode=function(node){var replaceCallbacks=[];removeNoDecorateSections(node,replaceCallbacks);for(var i=0;i<decorators.length;i++){decorators[i](node);}
 for(var i=0;i<replaceCallbacks.length;i++){replaceCallbacks[i]();}}
-function removeNoDecorateSections(node,callbacks){if(typeof(jQuery)!='undefined'){jQuery('.xf-disable-decorate',node).each(function(){var replace=document.createTextNode('');var parent=jQuery(this).parent();jQuery(this).replaceWith(replace);var self=this;callbacks.push(function(){jQuery(replace).replaceWith(self);});});}}})();registerPloneFunction(function(){decorateXatafaceNode(document.documentElement)});function showDay(date){document.getElementById('day'+date).style.visibility='visible';return true;}
+function removeNoDecorateSections(node,callbacks){if(typeof(jQuery)!='undefined'){jQuery('.xf-disable-decorate',node).each(function(){var replace=document.createTextNode('');var parent=jQuery(this).parent();jQuery(this).replaceWith(replace);var self=this;callbacks.push(function(){jQuery(replace).replaceWith(self);});});}}})();window.addEventListener('DOMContentLoaded', function(){decorateXatafaceNode(document.documentElement)});function showDay(date){document.getElementById('day'+date).style.visibility='visible';return true;}
 function hideDay(date){document.getElementById('day'+date).style.visibility='hidden';return true;}
 function setFocus(){var xre=new RegExp(/\berror\b/);for(var f=0;(formnode=document.getElementsByTagName('form').item(f));f++){for(var i=0;(node=formnode.getElementsByTagName('div').item(i));i++){if(xre.exec(node.className)){for(var j=0;(inputnode=node.getElementsByTagName('input').item(j));j++){inputnode.focus();return;}}}}}
 registerPloneFunction(setFocus)
@@ -66,13 +66,6 @@ if(selectbutton.isSelected==null)
 {initialState=initialState||false;selectbutton.isSelected=initialState;}
 if(selectbutton.isSelected==false){selectbutton.setAttribute('src',portal_url+'/images/select_none_icon.gif');selectbutton.isSelected=true;return selectAll(id,formName);}
 else{selectbutton.setAttribute('src',portal_url+'/images/select_all_icon.gif');selectbutton.isSelected=false;return deselectAll(id,formName);}}
-function scanforlinks(){if(!document.getElementsByTagName){return false};if(!document.getElementById){return false};contentarea=getContentArea()
-if(!contentarea){return false}
-links=contentarea.getElementsByTagName('a');for(i=0;i<links.length;i++){if((links[i].getAttribute('href'))&&(links[i].className.indexOf('link-plain')==-1)){var linkval=links[i].getAttribute('href')
-if(linkval.toLowerCase().indexOf(window.location.protocol+'//'+window.location.host)==0){}else if(linkval.indexOf('http:')!=0){protocols=['mailto','ftp','news','irc','h323','sip','callto','https']
-for(p=0;p<protocols.length;p++){if(linkval.indexOf(protocols[p]+':')==0){wrapNode(links[i],'span','link-'+protocols[p])
-break;}}}else{if(links[i].getElementsByTagName('img').length==0&&!links[i].className.match(/no-link-icon/)){wrapNode(links[i],'span','link-external')}}}}}
-registerPloneFunction(scanforlinks)
 function climb(node,word){if(!node){return false}
 if(node.hasChildNodes){var i;for(i=0;i<node.childNodes.length;i++){climb(node.childNodes[i],word);}
 if(node.nodeType==3){checkforhighlight(node,word);}}
@@ -203,9 +196,23 @@ var form=document.getElementById("result_list_selected_items_form");form.element
         height : window.innerHeight
          
     };
+    var firedInitialViewportChangedEvent = false;
     function updateBodyPadding() {
-
+        var localFiredInitialViewportChangedEvent = firedInitialViewportChangedEvent;
+        firedInitialViewportChangedEvent = true;
         if (!mobileActivated) {
+            if (viewport.width != window.innerWidth || viewport.height != window.innerHeight) {
+                viewport.width = window.innerWidth;
+                viewport.height = window.innerHeight;
+                var event = new Event('xf-viewport-changed');
+                window.dispatchEvent(event);
+            } else {
+                if (!localFiredInitialViewportChangedEvent) {
+                    var event = new Event('xf-viewport-changed');
+                    window.dispatchEvent(event);
+                }
+            }
+            
             return;
         }
         var body = document.querySelector('body');
@@ -398,6 +405,9 @@ var form=document.getElementById("result_list_selected_items_form");form.element
         if (!link) {
             return link;
         }
+        if (link.indexOf('javascript:') === 0) {
+            return link;
+        }
         if (link.indexOf('--referrer') > 0) {
             return link;
         }
@@ -437,12 +447,42 @@ var form=document.getElementById("result_list_selected_items_form");form.element
     });
     
     window.addEventListener('DOMContentLoaded', addBackButton);
+
+})();
+(function() {
+    var $ = jQuery;
+    var xataface = window.xataface || {};
+    window.xataface = xataface;
+    xataface.showInfiniteProgress = showInfiniteProgress;
+    xataface.hideInfiniteProgress = hideInfiniteProgress;
     
+    var globalInfiniteProgress;
+    function showInfiniteProgress(el) {
+        var spinner = el ? $('<div class="spin"></div>') : $('<div class="spin fillscreen"></div>');
+        if (el) {
+            $(el).append(spinner);
+        } else {
+            if (globalInfiniteProgress && jQuery.contains(document, globalInfiniteProgress)) {
+                return globalInfiniteProgress;
+            }
+            $('body').append(spinner);
+            globalInfiniteProgress = spinner.get(0);
+            
+        }
+        return spinner.get(0);
+    }
     
-    
-    
-    
-    
+    function hideInfiniteProgress(el) {
+        if (el) {
+            $(el).remove();
+        } else {
+            if (globalInfiniteProgress) {
+                $(globalInfiniteProgress).remove();
+                globalInfiniteProgress = null;
+            }
+        }
+        
+    }
 })();
 
 

@@ -67,7 +67,7 @@ class Dataface_QueryTool {
 	 * @param $db The database handle.
 	 * @param $query Associative array of query parameters.
 	 */
-	function Dataface_QueryTool($tablename, $db=null, $query=null){
+	function __construct($tablename, $db=null, $query=null){
 		$this->dbObj =& Dataface_DB::getInstance();
 		$this->_tablename = $tablename;
 		if ( !is_array($query) ) $query= array();
@@ -164,7 +164,7 @@ class Dataface_QueryTool {
 					);
 			}
 			$len = strlen($titleColumn);
-			if ( $titleColumn{$len-1} != ')' and $titleColumn{$len-1} != '`') $titleColumn = '`'.$titleColumn.'`';
+			if ( $titleColumn[$len-1] != ')' and $titleColumn[$len-1] != '`') $titleColumn = '`'.$titleColumn.'`';
 			
 			$builder = new Dataface_QueryBuilder( $this->_tablename, $this->_query);
 			$builder->action = 'select';

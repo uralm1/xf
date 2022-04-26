@@ -59,10 +59,10 @@ class Dataface_DB {
 		}
 		$this->_db = $db;
 		if ( @$this->app->_conf['cache_queries'] and !$this->_fcache_base_path ){
-			if ( is_writable(DATAFACE_SITE_PATH.'/templates_c') ){
-				$this->_fcache_base_path = DATAFACE_SITE_PATH.'/templates_c/query_results';
+			if ( is_writable(XFTEMPLATES_C) ){
+				$this->_fcache_base_path = XFTEMPLATES_C.'query_results';
 			} else {
-				$this->_fcache_base_path = DATAFACE_PATH.'/Dataface/templates_c/query_results';
+				$this->_fcache_base_path = XFTEMPLATES_C.'query_results';
 			}
 
 			if ( !file_exists($this->_fcache_base_path) ){
@@ -162,7 +162,7 @@ class Dataface_DB {
 		$count = 0;
 		for ($i=0;$i<$len;$i++){
 			$skip = false;
-			switch ($query{$i}){
+			switch ($query[$i]){
 				case '\\': 	$escaped = !$escaped;	
 							break;
 				case '"' :	if ( !$escaped && !$sglquoted ){
@@ -195,12 +195,12 @@ class Dataface_DB {
 				
 			}
 			
-			if ( $query{$i} != '\\' ) $escaped = false;
+			if ( $query[$i] != '\\' ) $escaped = false;
 			if ( $skip ) continue;
 			if (  $dblquoted || $sglquoted) {
-				$buffer .= $query{$i};
+				$buffer .= $query[$i];
 			}
-			else $output_query .= $query{$i};
+			else $output_query .= $query[$i];
 		}
 		
 		// Now to replace all numbers
