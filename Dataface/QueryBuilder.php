@@ -1312,7 +1312,8 @@ class Dataface_QueryBuilder {
 		$table_cols = $relatedRecord->getForeignKeyValues( $sql);
 		if ( count($this->errors) > 0 ){
 			$error = array_pop($this->errors);
-			$error->addUserInfo("Error getting foreign key values for relationship '$relationship_name'");
+			$relationshipName = $relationship->getName();
+			$error->addUserInfo("Error getting foreign key values for relationship '$relationshipName'");
 			throw new Exception($error->toString());
 		}
 
